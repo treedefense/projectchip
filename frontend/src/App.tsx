@@ -14,7 +14,7 @@ interface Round {
 }
 
 function HoleView(hole: Hole) {
-  if(hole.strokes > 0) {
+  if (hole.strokes > 0) {
     return <p>Shot {hole.strokes} on hole {hole.id}</p>
   }
 
@@ -44,15 +44,22 @@ function RoundView(round: Round) {
     }
     score += hole.strokes - hole.par;
   }
+  const scoreString = score <= 0 ? score.toString() : `+${score}`;
 
   return (
-    <div className="round">
+    <>
+    <div>
       <p>Course name is {round.name}</p>
+    </div>
+    <div className="round">
       {round.holes.map(hole => {
         return <HoleView {...hole} key={hole.id} />
       })}
-      Score: {score}
     </div>
+    <div>
+      Score: {scoreString}
+    </div>
+    </>
   )
 }
 
@@ -73,6 +80,12 @@ function App() {
       useNewHole(1, 3),
       useNewHole(2, 5),
       useNewHole(3, 4),
+      useNewHole(4, 3),
+      useNewHole(5, 5),
+      useNewHole(6, 4),
+      useNewHole(7, 3),
+      useNewHole(8, 5),
+      useNewHole(9, 4),
     ]
   };
 
