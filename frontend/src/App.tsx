@@ -1,19 +1,33 @@
 import React, { useState } from 'react';
 import './App.css';
 
-interface Hole {
-  id: number;
-  par: number;
-  strokes: number;
-  setStrokes(strokes: number): void;
+interface Course {
+  id: number; // unique course id
+  name: string,
+  location: string,
+  holes: Record<string, Hole>;
 }
 
+interface Hole {
+  id: number; // unique hole id per course
+  par: number;
+}
+
+/*
+  strokes: number;
+  setStrokes(strokes: number): void;
+*/
+
+// rename to match?
+// match is N rounds
+
 interface Round {
-  name: string;
-  holes: Hole[];
+  courseId: number;
+  strokes: Record<number, number>; // hole id to strokes
 }
 
 function HoleView(hole: Hole) {
+  /*
   if (hole.strokes > 0) {
     return <p>Shot {hole.strokes} on hole {hole.id}</p>
   }
@@ -33,9 +47,11 @@ function HoleView(hole: Hole) {
       })}
     </>
   )
+  */
 }
 
 function RoundView(round: Round) {
+  /*
   let score = 0;
   for (let i = 0; i < round.holes.length; i++) {
     const hole = round.holes[i];
@@ -61,8 +77,10 @@ function RoundView(round: Round) {
     </div>
     </>
   )
+  */
 }
 
+/*
 function useNewHole(id: number, par: number): Hole {
     const [strokes, setStrokes] = useState(0)
     return {
@@ -72,26 +90,34 @@ function useNewHole(id: number, par: number): Hole {
       setStrokes,
     };
 }
+*/
+
+function CoursePicker(courses: Record<number, Course>) {
+  return <div>Test</div>
+}
 
 function App() {
-  const round: Round = {
-    name: "Chipville",
-    holes: [
-      useNewHole(1, 3),
-      useNewHole(2, 5),
-      useNewHole(3, 4),
-      useNewHole(4, 3),
-      useNewHole(5, 5),
-      useNewHole(6, 4),
-      useNewHole(7, 3),
-      useNewHole(8, 5),
-      useNewHole(9, 4),
-    ]
+  const courses: Record<number, Course> = {
+    1: {
+      id: 1,
+      name: 'cherry Hill',
+      location: 'CA',
+      holes: {
+        1: {
+          id: 1,
+          par: 3,
+        },
+        2: {
+          id: 2,
+          par: 4,
+        },
+      },
+    },
   };
 
   return (
     <div className="App">
-      <RoundView {...round} />
+      <CoursePicker {...courses} />
     </div>
   );
 }
