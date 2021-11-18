@@ -1,17 +1,11 @@
 import React, { useState } from 'react';
 import './App.css';
 
-interface CourseList {
-  courseChoice: number;
-  setCourse(courseChoice: number): void;
-  courses: Record<number, Course>;
-}
-
 interface Course {
   id: number; // unique course id
   name: string,
   location: string,
-  holes: Record<string, Hole>;
+  holes: Hole[];
 }
 
 interface Hole {
@@ -19,103 +13,132 @@ interface Hole {
   par: number;
 }
 
-interface Round {
-  courseId: number;
-  holes: Record<string, Hole>;
-}
-
-function HoleView(hole: Hole) {
-}
-
-function RoundView(round: Round) {
+function StrokePicker({strokes, setStroke}: {strokes: number[], setStroke: React.Dispatch<React.SetStateAction<any>>}) {
   return (
     <div>
-      <p>{round.courseId}</p>
-      {Object.values(round.holes).map((hole) => {
-        return <p>{hole.par}</p>
-      })}
-    </div>
-  )
-}
-
-function CoursePicker(courseList: CourseList) {
-  return (
-    <div>
-      {Object.values(courseList.courses).map((course)=> {
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(stroke => {
         return (
-          <button
-          key={course.id}
-          onClick={() => courseList.setCourse(course.id)}
-          >
-          {course.name}
+          <button key={stroke} onClick={() => setStroke([...strokes, stroke])}>
+            {stroke}
           </button>
         )
       })}
-      <p>{courseList.courseChoice}</p>
     </div>
   )
 }
 
+function HoleView({id, par, strokes}: {id: number, par: number, strokes: number}) {
+  return <div>Hole {id}: {strokes} / {par}</div>
+}
+
+function ScoreView({holes, strokes}: {holes: Hole[], strokes: number[]}) {
+  let score = 0;
+  for (let i = 0; i < strokes.length; i++) {
+    score += strokes[i] - holes[i].par;
+  }
+  return <div>Score: {score > 0 ? '+' : ''}{score.toString()}</div>
+}
+
+function RoundView(course: Course) {
+  const [holeStrokes, setHoleStrokes] = useState([]);
+
+  return (
+    <>
+      <div>
+        <p>{course.name}</p>
+        {Object.values(course.holes).map((hole, index) => {
+          const props = {
+            id: hole.id,
+            par: hole.par,
+            strokes: holeStrokes[index] || 0,
+          }
+          return <HoleView key={hole.id} {...props} />
+        })}
+        <ScoreView holes={course.holes} strokes={holeStrokes} />
+        {course.holes.length > holeStrokes.length && 
+          <p>
+            <div>Select strokes for hole {holeStrokes.length+1}</div>
+            <StrokePicker strokes={holeStrokes} setStroke={setHoleStrokes} />
+          </p>
+        }
+      </div>
+    </>
+  )
+}
+
+function CoursePicker({courses, setCourseId}: { courses: Course[], setCourseId: (id: number) => void}): JSX.Element {
+  return (
+    <div>
+      {courses.map((course)=> {
+        return (
+          <button
+          key={course.id}
+          onClick={() => setCourseId(course.id)}
+          >
+            {course.name}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function LoadCourses(): Course[] {
+  return [
+    {
+      id: 0,
+      name: 'Cherry Hill',
+      location: 'CA',
+      holes: [
+        {
+          id: 1,
+          par: 3,
+        },
+        {
+          id: 2,
+          par: 4,
+        },
+      ],
+    },
+    {
+      id: 1,
+      name: 'Orange Brook',
+      location: 'OR',
+      holes: [
+        {
+          id: 1,
+          par: 4,
+        },
+        {
+          id: 2,
+          par: 3,
+        },
+      ],
+    },
+  ];
+}
 
 function App() {
-  const [courseChoice, setCourse] = useState(-1)
-  const courseList: CourseList = {
-    courseChoice,
-    setCourse,
-    courses: {
-      1: {
-        id: 1,
-        name: 'Cherry Hill',
-        location: 'CA',
-        holes: {
-          1: {
-            id: 1,
-            par: 3,
-          },
-          2: {
-            id: 2,
-            par: 4,
-          },
-        },
-      },
-      2: {
-        id: 2,
-        name: 'Orange Brook',
-        location: 'OR',
-        holes: {
-          1: {
-            id: 1,
-            par: 4,
-          },
-          2: {
-            id: 2,
-            par: 3,
-          },
-        },
-      },
-    },
-  };
+  const courses: Course[] = LoadCourses();
+  const [courseId, setCourse] = useState(-1)
 
+  // TODO: later
+  // login at home: /
+  // you start a match: /start
+  // choose a course: /play
 
-  if(courseList.courseChoice === -1)
-  {
+  if (courseId < 0) {
     return (
       <div className="App">
-        <CoursePicker{...courseList}/>
-      </div>
-    );
-  } else {
-    let round: Round = {
-      courseId: courseChoice,
-      holes: courseList.courses[courseChoice].holes,
-      }
-    return (
-      <div className="App">
-        <RoundView{...round}/>
+        <CoursePicker courses={courses} setCourseId={setCourse} />
       </div>
     );
   }
-
+  return (
+    <div>
+      <RoundView {...courses[courseId]} />
+    </div>
+  )
 }
 
 export default App;
