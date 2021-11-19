@@ -1,99 +1,144 @@
 import React, { useState } from 'react';
 import './App.css';
 
-interface Hole {
-  id: number;
-  par: number;
-  strokes: number;
-  setStrokes(strokes: number): void;
-}
-
-interface Round {
-  name: string;
+interface Course {
+  id: number; // unique course id
+  name: string,
+  location: string,
   holes: Hole[];
 }
 
-function HoleView(hole: Hole) {
-  if (hole.strokes > 0) {
-    return <p>Shot {hole.strokes} on hole {hole.id}</p>
-  }
+interface Hole {
+  id: number; // unique hole id per course
+  par: number;
+}
 
+function StrokePicker({strokes, setStroke}: {strokes: number[], setStroke: React.Dispatch<React.SetStateAction<any>>}) {
   return (
-    <>
-      <p>Enter Strokes for hole {hole.id}</p>
-      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map((strokes) => {
+    <div>
+      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(stroke => {
         return (
-          <button
-            key={strokes}
-            onClick={() => hole.setStrokes(strokes)}
-          >
-            {strokes}
+          <button key={stroke} onClick={() => setStroke([...strokes, stroke])}>
+            {stroke}
           </button>
         )
       })}
-    </>
+    </div>
   )
 }
 
-function RoundView(round: Round) {
+function HoleView({id, par, strokes}: {id: number, par: number, strokes: number}) {
+  return <div>Hole {id}: {strokes} / {par}</div>
+}
+
+function ScoreView({holes, strokes}: {holes: Hole[], strokes: number[]}) {
   let score = 0;
-  for (let i = 0; i < round.holes.length; i++) {
-    const hole = round.holes[i];
-    if (hole.strokes === 0) {
-      break;
-    }
-    score += hole.strokes - hole.par;
+  for (let i = 0; i < strokes.length; i++) {
+    score += strokes[i] - holes[i].par;
   }
-  const scoreString = score <= 0 ? score.toString() : `+${score}`;
+  return <div>Score: {score > 0 ? '+' : ''}{score.toString()}</div>
+}
+
+function RoundView(course: Course) {
+  const [holeStrokes, setHoleStrokes] = useState([]);
 
   return (
     <>
-    <div>
-      <p>Course name is {round.name}</p>
-    </div>
-    <div className="round">
-      {round.holes.map(hole => {
-        return <HoleView {...hole} key={hole.id} />
-      })}
-    </div>
-    <div>
-      Score: {scoreString}
-    </div>
+      <div>
+        <p>{course.name}</p>
+        {Object.values(course.holes).map((hole, index) => {
+          const props = {
+            id: hole.id,
+            par: hole.par,
+            strokes: holeStrokes[index] || 0,
+          }
+          return <HoleView key={hole.id} {...props} />
+        })}
+        <ScoreView holes={course.holes} strokes={holeStrokes} />
+        {course.holes.length > holeStrokes.length && 
+          <p>
+            <div>Select strokes for hole {holeStrokes.length+1}</div>
+            <StrokePicker strokes={holeStrokes} setStroke={setHoleStrokes} />
+          </p>
+        }
+      </div>
     </>
   )
 }
 
-function useNewHole(id: number, par: number): Hole {
-    const [strokes, setStrokes] = useState(0)
-    return {
-      id,
-      par,
-      strokes,
-      setStrokes,
-    };
+function CoursePicker({courses, setCourseId}: { courses: Course[], setCourseId: (id: number) => void}): JSX.Element {
+  return (
+    <div>
+      {courses.map((course)=> {
+        return (
+          <button
+          key={course.id}
+          onClick={() => setCourseId(course.id)}
+          >
+            {course.name}
+          </button>
+        )
+      })}
+    </div>
+  )
+}
+
+function LoadCourses(): Course[] {
+  return [
+    {
+      id: 0,
+      name: 'Cherry Hill',
+      location: 'CA',
+      holes: [
+        {
+          id: 1,
+          par: 3,
+        },
+        {
+          id: 2,
+          par: 4,
+        },
+      ],
+    },
+    {
+      id: 1,
+      name: 'Orange Brook',
+      location: 'OR',
+      holes: [
+        {
+          id: 1,
+          par: 4,
+        },
+        {
+          id: 2,
+          par: 3,
+        },
+      ],
+    },
+  ];
 }
 
 function App() {
-  const round: Round = {
-    name: "Chipville",
-    holes: [
-      useNewHole(1, 3),
-      useNewHole(2, 5),
-      useNewHole(3, 4),
-      useNewHole(4, 3),
-      useNewHole(5, 5),
-      useNewHole(6, 4),
-      useNewHole(7, 3),
-      useNewHole(8, 5),
-      useNewHole(9, 4),
-    ]
-  };
+  const courses: Course[] = LoadCourses();
+  const [courseId, setCourse] = useState(-1)
 
+  // TODO: later
+  // login at home: /
+  // you start a match: /start
+  // choose a course: /play
+
+  if (courseId < 0) {
+    return (
+      <div className="App">
+        <CoursePicker courses={courses} setCourseId={setCourse} />
+      </div>
+    );
+  }
   return (
-    <div className="App">
-      <RoundView {...round} />
+    <div>
+      <RoundView {...courses[courseId]} />
     </div>
-  );
+  )
 }
 
 export default App;
