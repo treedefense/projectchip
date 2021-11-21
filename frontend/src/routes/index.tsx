@@ -2,6 +2,7 @@ import { Routes as ReactRoutes, Route, Outlet, Link } from 'react-router-dom';
 import { Matches, ChooseCreateMatch, CoursePicker } from './Matches';
 import { Home } from './Home';
 import { NoMatch } from './NoMatch';
+import { homePath, matchPath, coursePickerPath } from './paths';
 
 /* Notes
  * /new : start a new match ( later on give it some metadata )
@@ -17,12 +18,12 @@ import { NoMatch } from './NoMatch';
 export function Routes() {
   return (
     <ReactRoutes>
-      <Route path="/" element={<Layout />}>
+      <Route path={homePath} element={<Layout />}>
         <Route index element={<Home />} />
 
-        <Route path="/match" element={<Matches />} >
+        <Route path={matchPath} element={<Matches />} >
           <Route index element={<ChooseCreateMatch />} />
-          <Route path="course" element={<CoursePicker />} />
+          <Route path={coursePickerPath} element={<CoursePicker />} />
         </Route>
 
         <Route path="*" element={<NoMatch />} />
@@ -35,9 +36,9 @@ function Layout() {
   return (
     <>
       <nav>
-        <Link to="/">Project Chip</Link>
+        <Link to={homePath}>Project Chip</Link>
         |
-        <Link to="/match">Matches</Link>
+        <Link to={matchPath}>Matches</Link>
       </nav>
 
       {/* An <Outlet> renders whatever child route is currently active,
