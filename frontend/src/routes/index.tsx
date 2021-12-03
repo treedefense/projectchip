@@ -2,20 +2,15 @@ import { Routes as ReactRoutes, Route, Outlet, Link } from 'react-router-dom';
 
 import { Home } from './Home';
 import { NoMatch } from './NoMatch';
+import { Matches } from './Matches';
 
 import {
-  Matches,
-  ChooseCreateMatch,
+  Play,
   CoursePicker,
   HolePicker,
-} from './Matches';
+} from './Play';
 
-import {
-  homePath,
-  matchesPath,
-  coursePickerPath,
-  holePickerPath,
-} from './paths';
+import * as paths from './paths';
 
 /* Notes
  * /new : start a new match ( later on give it some metadata )
@@ -31,13 +26,15 @@ import {
 export function Routes() {
   return (
     <ReactRoutes>
-      <Route path={homePath} element={<Layout />}>
+      <Route path={paths.homePath} element={<Layout />}>
         <Route index element={<Home />} />
 
-        <Route path={matchesPath} element={<Matches />} >
-          <Route index element={<ChooseCreateMatch />} />
-          <Route path={coursePickerPath} element={<CoursePicker />} />
-          <Route path={holePickerPath} element={<HolePicker />} />
+        <Route path={paths.matchesPath} element={<Matches />} >
+        </Route>
+        
+        <Route path={paths.playPath} element={<Play />} >
+          <Route index element={<CoursePicker />} />
+          <Route path={paths.holePickerPath} element={<HolePicker />} />
         </Route>
 
         <Route path="*" element={<NoMatch />} />
@@ -50,9 +47,11 @@ function Layout() {
   return (
     <>
       <nav>
-        <Link to={homePath}>Project Chip</Link>
+        <Link to={paths.homePath}>Project Chip</Link>
         |
-        <Link to={matchesPath}>Matches</Link>
+        <Link to={paths.matchesPath}>Matches</Link>
+        |
+        <Link to={paths.playPath}>Play</Link>
       </nav>
 
       {/* An <Outlet> renders whatever child route is currently active,
