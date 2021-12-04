@@ -1,22 +1,22 @@
-import { LoadCourses } from '../../../models';
+import { LoadLocations } from '../../../models';
 import { holePickerPath } from '../../paths';
 import { useNavigateSearch } from '../../../utils/navigateParams';
 
-export function CoursePicker() {
-  const courses = LoadCourses();
+export function LocationPicker() {
+  const locations = LoadLocations();
   const navigate = useNavigateSearch();
 
   return (
     <main>
-      {courses.map((course) => {
+      {locations.map((location) => {
         return (
           <button
-            key={course.id}
+            key={location.id}
             onClick={() => navigate(holePickerPath, {
-              courseId: course.id.toString(),
+              locationId: location.id.toString(),
             })}
           >
-            {course.name}
+            {location.name}
           </button>
         );
       })}
