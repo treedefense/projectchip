@@ -6,7 +6,7 @@ import { Matches } from './Matches';
 
 import {
   Play,
-  CoursePicker,
+  LocationPicker,
   HolePicker,
 } from './Play';
 
@@ -33,7 +33,7 @@ export function Routes() {
         </Route>
         
         <Route path={paths.playPath} element={<Play />} >
-          <Route index element={<CoursePicker />} />
+          <Route index element={<LocationPicker />} />
           <Route path={paths.holePickerPath} element={<HolePicker />} />
         </Route>
 

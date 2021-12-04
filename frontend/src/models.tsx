@@ -1,22 +1,20 @@
-export interface Course {
-  id: number; // unique course id
+export interface Location {
+  id: number; // unique location id
   name: string,
-  location: string,
   holes: Hole[];
 }
 
 export interface Hole {
-  id: number; // unique hole id per course
+  id: number; // unique hole id per location
   par: number;
 }
 
 // TEMP place for this, will need to be stored on the backend later anyway
-export function LoadCourses(): Course[] {
+export function LoadLocations(): Location[] {
   return [
     {
       id: 0,
       name: 'Cherry Hill',
-      location: 'CA',
       holes: [
         {
           id: 1,
@@ -31,7 +29,6 @@ export function LoadCourses(): Course[] {
     {
       id: 1,
       name: 'Orange Brook',
-      location: 'OR',
       holes: [
         {
           id: 1,
