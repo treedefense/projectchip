@@ -1,9 +1,9 @@
-import { LoadLocations } from '../../../models';
+import { GetLocations } from '../../../db';
 import { holePickerPath } from '../../paths';
 import { useNavigateSearch } from '../../../utils/navigateParams';
 
 export function LocationPicker() {
-  const locations = LoadLocations();
+  const locations = GetLocations();
   const navigate = useNavigateSearch();
 
   return (

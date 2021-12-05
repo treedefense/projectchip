@@ -1,10 +1,10 @@
 import { useState } from 'react';
-import { useSearchParams } from 'react-router-dom';
-import { GetLocation } from '../../../models';
-// import { playPath } from '../../paths';
+import { useSearchParams, useNavigate } from 'react-router-dom';
+import { GetLocation, CreateMatch } from '../../../db';
 
 export function HolePicker() {
   const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
   const [selectedHoles, setSelectedHoles] = useState<Record<number, Boolean>>({});
 
   const id = searchParams.get('locationId');
@@ -29,6 +29,16 @@ export function HolePicker() {
   }
 
   const onSubmit = () => {
+    // create a match here
+    const matchHoles = location.holes.filter(h => selectedHoles[h.id] === true);
+    CreateMatch({
+      location,
+      holes: matchHoles,
+      strokes: new Array(matchHoles.length).fill(0),
+    });
+
+    // we want to go to /matches/:matchId but this doesn't exist
+    navigate('/');
   }
 
   return (
@@ -42,7 +52,7 @@ export function HolePicker() {
                 <input
                   type="checkbox"
                   name={hole.id.toString()}
-                  checked={!!selectedHoles?.[hole.id]}
+                  checked={selectedHoles[hole.id] === true}
                   onChange={() => onHoleStateChanged(hole.id)}
                 />
                 {hole.id}
