@@ -5,7 +5,7 @@ import { HolePicker } from './HolePicker';
 export function Play() {
   return (
     <main>
-      <h2>Play a match</h2>
+      <h1>Play a match</h1>
       <Outlet />
     </main>
   );
