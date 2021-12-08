@@ -1,4 +1,6 @@
 import { Outlet } from 'react-router-dom';
+import { Match } from './Match';
+import { MatchPicker } from './MatchPicker';
 
 export function Matches() {
   return (
@@ -9,3 +11,7 @@ export function Matches() {
   );
 }
 
+export {
+  Match,
+  MatchPicker,
+};

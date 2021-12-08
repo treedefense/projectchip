@@ -10,6 +10,7 @@ export interface Hole {
 }
 
 export interface Match {
+  id: number;
   location: Location;
   holes: Hole[];
   strokes: number[];

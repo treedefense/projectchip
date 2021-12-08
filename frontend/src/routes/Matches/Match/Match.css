@@ -1,0 +1,6 @@
+.container {
+    display: grid;
+    grid: auto-flow 2rem / repeat(3,3rem);
+    align-items: center;
+    justify-items: center;
+}

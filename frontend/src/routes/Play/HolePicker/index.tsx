@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { GetLocation, CreateMatch } from '../../../db';
+import { matchesPath } from '../../paths';
 
 export function HolePicker() {
   const [searchParams] = useSearchParams();
@@ -31,14 +32,13 @@ export function HolePicker() {
   const onSubmit = () => {
     // create a match here
     const matchHoles = location.holes.filter(h => selectedHoles[h.id] === true);
-    CreateMatch({
+    const matchId = CreateMatch({
       location,
       holes: matchHoles,
-      strokes: new Array(matchHoles.length).fill(0),
     });
 
     // we want to go to /matches/:matchId but this doesn't exist
-    navigate('/');
+    navigate(`${matchesPath}/${matchId}`);
   }
 
   return (
