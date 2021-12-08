@@ -39,7 +39,6 @@ export function Match() {
 
     const match = GetMatch(parseInt(matchId, 10));
     if (!match) {
-      console.log('match is broken');
       return <div></div>
     }
 
