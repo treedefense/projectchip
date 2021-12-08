@@ -1,4 +1,4 @@
-import { Location, Match } from './models';
+import { Location, Match, Hole } from './models';
 
 const locations = [
     {
@@ -61,6 +61,7 @@ const locations = [
 
 const matches: Array<Match> = [
     {
+        id: 0,
         location: locations[0],
         holes: locations[0].holes,
         strokes: new Array(9).fill(0),
@@ -79,10 +80,21 @@ export function GetLocation(id: number): (Location|undefined) {
     }
 }
   
-export function CreateMatch(match: Match): number {
-    return matches.push(match) - 1;
+export function CreateMatch({location, holes}: {location: Location; holes: Hole[];}): number {
+    const match = {
+        id: matches.length,
+        location,
+        holes,
+        strokes: new Array(holes.length).fill(0),
+    }
+    matches.push(match);
+    return match.id;
 }
 
 export function GetMatch(matchId: number) {
     return matches[matchId];
+}
+
+export function GetMatches(): Match[] {
+    return matches;
 }

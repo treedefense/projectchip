@@ -2,7 +2,7 @@ import { Routes as ReactRoutes, Route, Outlet, Link } from 'react-router-dom';
 
 import { Home } from './Home';
 import { NoMatch } from './NoMatch';
-import { Matches, Match } from './Matches';
+import { Matches, Match, MatchPicker } from './Matches';
 
 import {
   Play,
@@ -21,6 +21,7 @@ export function Routes() {
         <Route index element={<Home />} />
 
         <Route path={paths.matchesPath} element={<Matches />} >
+          <Route index element={<MatchPicker />}/>
           <Route path={paths.matchPath} element={<Match />} />
         </Route>
         
