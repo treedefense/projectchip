@@ -1,4 +1,5 @@
 type Query {
+    location(id: ID!): Location
     locations: [Location!]!
 }
 
