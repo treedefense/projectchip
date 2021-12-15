@@ -1,0 +1,9 @@
+query findLocationHoles($locationID: ID!) {
+  location(id: $locationID) {
+    holes {
+      number
+      name
+    }
+  }
+}
+
