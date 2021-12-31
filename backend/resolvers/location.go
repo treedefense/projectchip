@@ -6,33 +6,28 @@ package resolvers
 import (
 	"context"
 	"fmt"
-	"math/rand"
 
+	"github.com/treedefense/projectchip/db"
 	"github.com/treedefense/projectchip/graph/generated"
-	"github.com/treedefense/projectchip/graph/model"
 )
 
-func (r *mutationResolver) CreateLocation(ctx context.Context, name string, holes []*model.HoleInputs) (*model.Location, error) {
-	var locHoles []*model.Hole
-	for _, h := range holes {
-		locHoles = append(locHoles, &model.Hole{
-			ID:     fmt.Sprintf("%v", rand.Int()),
-			Name:   h.Name,
-			Number: h.Number,
-			Par:    h.Par,
-		})
-	}
-
-	loc := &model.Location{
-		ID:    fmt.Sprintf("%v", len(r.locations)),
-		Name:  name,
-		Holes: locHoles,
-	}
-	r.locations = append(r.locations, loc)
-	return loc, nil
+func (r *holeResolver) Number(ctx context.Context, obj *db.Hole) (int32, error) {
+	panic(fmt.Errorf("not implemented"))
 }
 
-func (r *queryResolver) Location(ctx context.Context, id string) (*model.Location, error) {
+func (r *holeResolver) Name(ctx context.Context, obj *db.Hole) (*string, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *holeResolver) Par(ctx context.Context, obj *db.Hole) (int32, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *locationResolver) Holes(ctx context.Context, obj *db.Location) ([]*db.Hole, error) {
+	panic(fmt.Errorf("not implemented"))
+}
+
+func (r *queryResolver) Location(ctx context.Context, id int64) (*db.Location, error) {
 	for _, loc := range r.locations {
 		if loc.ID == id {
 			return loc, nil
@@ -41,15 +36,19 @@ func (r *queryResolver) Location(ctx context.Context, id string) (*model.Locatio
 	return nil, nil
 }
 
-func (r *queryResolver) Locations(ctx context.Context) ([]*model.Location, error) {
+func (r *queryResolver) Locations(ctx context.Context) ([]*db.Location, error) {
 	return r.locations, nil
 }
 
-// Mutation returns generated.MutationResolver implementation.
-func (r *Resolver) Mutation() generated.MutationResolver { return &mutationResolver{r} }
+// Hole returns generated.HoleResolver implementation.
+func (r *Resolver) Hole() generated.HoleResolver { return &holeResolver{r} }
+
+// Location returns generated.LocationResolver implementation.
+func (r *Resolver) Location() generated.LocationResolver { return &locationResolver{r} }
 
 // Query returns generated.QueryResolver implementation.
 func (r *Resolver) Query() generated.QueryResolver { return &queryResolver{r} }
 
-type mutationResolver struct{ *Resolver }
+type holeResolver struct{ *Resolver }
+type locationResolver struct{ *Resolver }
 type queryResolver struct{ *Resolver }

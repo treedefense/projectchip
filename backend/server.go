@@ -1,7 +1,7 @@
 package main
 
-//go:generate go run github.com/99designs/gqlgen
 //go:generate go run github.com/kyleconroy/sqlc/cmd/sqlc generate
+//go:generate go run github.com/99designs/gqlgen
 
 import (
 	"log"

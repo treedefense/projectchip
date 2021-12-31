@@ -9,3 +9,19 @@ CREATE TABLE holes (
   name TEXT,
   par SMALLINT
 );
+
+-- name: CreateLocation :one
+INSERT INTO locations (
+  name
+) VALUES (
+  $1
+)
+RETURNING *;
+
+-- name: CreateHole :one
+INSERT INTO holes (
+  number, name,  par
+) VALUES (
+  $1, $2, $3
+)
+RETURNING *;

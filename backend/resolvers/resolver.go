@@ -4,8 +4,8 @@ package resolvers
 //
 // It serves as dependency injection for your app, add any dependencies you require here.
 
-import "github.com/treedefense/projectchip/graph/model"
+import "github.com/treedefense/projectchip/db"
 
 type Resolver struct {
-	locations []*model.Location
+	locations []*db.Location
 }
