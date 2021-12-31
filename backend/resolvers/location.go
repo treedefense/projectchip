@@ -32,6 +32,15 @@ func (r *mutationResolver) CreateLocation(ctx context.Context, name string, hole
 	return loc, nil
 }
 
+func (r *queryResolver) Location(ctx context.Context, id string) (*model.Location, error) {
+	for _, loc := range r.locations {
+		if loc.ID == id {
+			return loc, nil
+		}
+	}
+	return nil, nil
+}
+
 func (r *queryResolver) Locations(ctx context.Context) ([]*model.Location, error) {
 	return r.locations, nil
 }

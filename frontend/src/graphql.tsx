@@ -63,18 +63,19 @@ export type FindLocationHolesQueryVariables = Exact<{
 }>;
 
 
-export type FindLocationHolesQuery = { __typename?: 'Query', location?: { __typename?: 'Location', holes: Array<{ __typename?: 'Hole', number: number, name?: string | null | undefined }> } | null | undefined };
+export type FindLocationHolesQuery = { __typename?: 'Query', location?: { __typename?: 'Location', holes: Array<{ __typename?: 'Hole', id: string, number: number, name?: string | null | undefined }> } | null | undefined };
 
 export type FindLocationNamesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type FindLocationNamesQuery = { __typename?: 'Query', locations: Array<{ __typename?: 'Location', name: string }> };
+export type FindLocationNamesQuery = { __typename?: 'Query', locations: Array<{ __typename?: 'Location', id: string, name: string }> };
 
 
 export const FindLocationHolesDocument = gql`
     query findLocationHoles($locationID: ID!) {
   location(id: $locationID) {
     holes {
+      id
       number
       name
     }
@@ -112,6 +113,7 @@ export type FindLocationHolesQueryResult = Apollo.QueryResult<FindLocationHolesQ
 export const FindLocationNamesDocument = gql`
     query findLocationNames {
   locations {
+    id
     name
   }
 }
