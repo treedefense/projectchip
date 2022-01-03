@@ -1,20 +1,27 @@
 [[table]]
-  name = "accounts"
+	name = "accounts"
 
 [[table]]
-  name = "locations"
+	name = "locations"
 
 [[table]]
-  name = "courses"
+	name = "courses"
 
 [[table]]
-  name = "holes"
+	name = "holes"
 
 [[table]]
-  name = "matches"
+	name = "matches"
 
 [[table]]
-  name = "match_participants"
+	name = "match_participants"
 
 [[table]]
-  name = "match_strokes"
+	name = "match_strokes"
+
+[[query]]
+	name = "GetAllLocations"
+	return_type = "[]*Location"
+	body = '''
+	SELECT * FROM locations;
+	'''

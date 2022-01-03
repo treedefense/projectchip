@@ -4,13 +4,13 @@ schema:
 
 # Where should the generated server code go?
 exec:
-  filename: graph/generated/generated.go
-  package: generated
+  filename: graph/server_gen.go
+  package: graph
 
 # Where should any generated models go?
 model:
-  filename: graph/model/models_gen.go
-  package: model
+  filename: graph/models_gen.go
+  package: graph
 
 # Where should the resolver implementations go?
 resolver:
@@ -18,6 +18,9 @@ resolver:
   dir: resolvers
   package: resolvers
   filename_template: "{name}.go"
+
+autobind:
+  - "github.com/treedefense/projectchip/db"
 
 # This section declares type mapping between the GraphQL and go type systems
 #

@@ -17,8 +17,8 @@ CREATE TABLE holes (
     id SERIAL PRIMARY KEY,
     course_id INTEGER,
     -- which number this hole is on the course
-    course_order SMALLINT,
-    par SMALLINT,
+    course_order SMALLINT NOT NULL,
+    par SMALLINT NOT NULL,
 
     constraint fk_course_id
         FOREIGN KEY (course_id)

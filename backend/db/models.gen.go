@@ -27,20 +27,22 @@ type PGClient struct {
 	// saw in the table we used to generate code. This means that you don't have to worry
 	// about migrations merging in a slightly different order than their timestamps have
 	// breaking 'SELECT *'.
-	rwlockForAccount             sync.RWMutex
-	colIdxTabForAccount          []int
-	rwlockForLocation            sync.RWMutex
-	colIdxTabForLocation         []int
-	rwlockForCourse              sync.RWMutex
-	colIdxTabForCourse           []int
-	rwlockForHole                sync.RWMutex
-	colIdxTabForHole             []int
-	rwlockForMatch               sync.RWMutex
-	colIdxTabForMatch            []int
-	rwlockForMatchParticipant    sync.RWMutex
-	colIdxTabForMatchParticipant []int
-	rwlockForMatchStroke         sync.RWMutex
-	colIdxTabForMatchStroke      []int
+	rwlockForAccount               sync.RWMutex
+	colIdxTabForAccount            []int
+	rwlockForLocation              sync.RWMutex
+	colIdxTabForLocation           []int
+	rwlockForCourse                sync.RWMutex
+	colIdxTabForCourse             []int
+	rwlockForHole                  sync.RWMutex
+	colIdxTabForHole               []int
+	rwlockForMatch                 sync.RWMutex
+	colIdxTabForMatch              []int
+	rwlockForMatchParticipant      sync.RWMutex
+	colIdxTabForMatchParticipant   []int
+	rwlockForMatchStroke           sync.RWMutex
+	colIdxTabForMatchStroke        []int
+	rwlockForGetAllLocationsRow    sync.RWMutex
+	colIdxTabForGetAllLocationsRow []int
 }
 
 // bogus usage so we can compile with no tables configured
@@ -7126,6 +7128,97 @@ func (p *pgClientImpl) privateMatchStrokeFillParentMatch(
 	return nil
 }
 
+func (p *PGClient) GetAllLocations(
+	ctx context.Context,
+) (ret []Location, err error) {
+	return p.impl.GetAllLocations(
+		ctx,
+	)
+}
+
+func (tx *TxPGClient) GetAllLocations(
+	ctx context.Context,
+) (ret []Location, err error) {
+	return tx.impl.GetAllLocations(
+		ctx,
+	)
+}
+
+func (conn *ConnPGClient) GetAllLocations(
+	ctx context.Context,
+) (ret []Location, err error) {
+	return conn.impl.GetAllLocations(
+		ctx,
+	)
+}
+func (p *pgClientImpl) GetAllLocations(
+	ctx context.Context,
+) (ret []Location, err error) {
+	ret = []Location{}
+
+	var rows *sql.Rows
+	rows, err = p.GetAllLocationsQuery(
+		ctx,
+	)
+	if err != nil {
+		return nil, p.client.errorConverter(err)
+	}
+	defer func() {
+		if err == nil {
+			err = rows.Close()
+			if err != nil {
+				ret = nil
+				err = p.client.errorConverter(err)
+			}
+		} else {
+			rowErr := rows.Close()
+			if rowErr != nil {
+				err = p.client.errorConverter(fmt.Errorf("%s AND %s", err.Error(), rowErr.Error()))
+			}
+		}
+	}()
+
+	for rows.Next() {
+		var row Location
+		err = row.Scan(ctx, p.client, rows)
+		ret = append(ret, row)
+	}
+
+	return
+}
+
+func (p *PGClient) GetAllLocationsQuery(
+	ctx context.Context,
+) (*sql.Rows, error) {
+	return p.impl.GetAllLocationsQuery(
+		ctx,
+	)
+}
+
+func (tx *TxPGClient) GetAllLocationsQuery(
+	ctx context.Context,
+) (*sql.Rows, error) {
+	return tx.impl.GetAllLocationsQuery(
+		ctx,
+	)
+}
+
+func (conn *ConnPGClient) GetAllLocationsQuery(
+	ctx context.Context,
+) (*sql.Rows, error) {
+	return conn.impl.GetAllLocationsQuery(
+		ctx,
+	)
+}
+func (p *pgClientImpl) GetAllLocationsQuery(
+	ctx context.Context,
+) (*sql.Rows, error) {
+	return p.queryContext(
+		ctx,
+		`SELECT * FROM locations;`,
+	)
+}
+
 type DBQueries interface {
 	//
 	// automatic CRUD methods
@@ -7225,6 +7318,14 @@ type DBQueries interface {
 	//
 	// query methods
 	//
+
+	// GetAllLocations query
+	GetAllLocations(
+		ctx context.Context,
+	) ([]Location, error)
+	GetAllLocationsQuery(
+		ctx context.Context,
+	) (*sql.Rows, error)
 
 	//
 	// stored function methods
@@ -7562,8 +7663,8 @@ var genTimeColIdxTabForMatch map[string]int = map[string]int{
 type Hole struct {
 	Id           int64          `gorm:"column:id;is_primary"`
 	CourseId     *int64         `gorm:"column:course_id"`
-	CourseOrder  *int64         `gorm:"column:course_order"`
-	Par          *int64         `gorm:"column:par"`
+	CourseOrder  int64          `gorm:"column:course_order"`
+	Par          int64          `gorm:"column:par"`
 	MatchStrokes []*MatchStroke `gorm:"foreignKey:HoleId"`
 	Course       *Course
 }
@@ -7626,16 +7727,12 @@ func (r *Hole) Scan(ctx context.Context, client *PGClient, rs *sql.Rows) error {
 		}
 	}
 	r.CourseId = convertNullInt64(nullableTgts.scanCourseId)
-	r.CourseOrder = convertNullInt64(nullableTgts.scanCourseOrder)
-	r.Par = convertNullInt64(nullableTgts.scanPar)
 
 	return nil
 }
 
 type nullableScanTgtsForHole struct {
-	scanCourseId    sql.NullInt64
-	scanCourseOrder sql.NullInt64
-	scanPar         sql.NullInt64
+	scanCourseId sql.NullInt64
 }
 
 // a table mapping codegen-time col indicies to functions returning a scanner for the
@@ -7657,13 +7754,13 @@ var scannerTabForHole = [...]func(*Hole, *nullableScanTgtsForHole) interface{}{
 		r *Hole,
 		nullableTgts *nullableScanTgtsForHole,
 	) interface{} {
-		return &(nullableTgts.scanCourseOrder)
+		return &(r.CourseOrder)
 	},
 	func(
 		r *Hole,
 		nullableTgts *nullableScanTgtsForHole,
 	) interface{} {
-		return &(nullableTgts.scanPar)
+		return &(r.Par)
 	},
 }
 
@@ -7970,3 +8067,4 @@ var genTimeColIdxTabForAccount map[string]int = map[string]int{
 	`nickname`: 1,
 	`email`:    2,
 }
+var _ = unstable.NotFoundError{}

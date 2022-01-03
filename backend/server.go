@@ -1,87 +1,50 @@
 package main
 
 //go:generate go run github.com/opendoor/pggen/cmd/pggen -o db/models.gen.go -c $DB_URL pggen.toml
-//broken:::: go:generate go run github.com/99designs/gqlgen
+//go:generate go run github.com/99designs/gqlgen
 
 import (
+	"database/sql"
 	"log"
 	"net/http"
 	"os"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/treedefense/projectchip/graph/generated"
+	_ "github.com/jackc/pgx/v4/stdlib"
+	"github.com/treedefense/projectchip/db"
+	"github.com/treedefense/projectchip/graph"
 	"github.com/treedefense/projectchip/resolvers"
 )
 
 const defaultPort = "8080"
 
 func main() {
+	// TODO: configs
 	port := os.Getenv("PORT")
 	if port == "" {
 		port = defaultPort
 	}
 
-	// Entry point:
-	// Build all necessary connections
-
-	// Repositories: Interfaces to our database
-	// Repo Implementations: our actual databases, built in the entry point
-	// Resolvers: External requests, convert to the proper types and handled
-
-	/* DONT DO
-	type LocationDatabase struct {
-		postgres DB
+	dbUrl := os.Getenv("DB_URL")
+	if dbUrl == "" {
+		dbUrl = "postgres://postgres:password@localhost/projectchip"
 	}
 
-	func (ld *LocationDatabase) GetLocation(id string) *Location {
-		panic("asdfasdf")
-	}
-	*/
-
-	/* Do
-	type LocationRepository interface {
-		GetLocation(id string): *Location
+	conn, err := sql.Open("pgx", os.Getenv("DB_URL"))
+	if err != nil {
+		log.Fatal(err)
 	}
 
-	type locationDatabase struct {
-		postgres DB
+	pgClient := db.NewPGClient(conn)
+
+	schemaConfig := graph.Config{
+		Resolvers: &resolvers.Resolver{
+			Db: pgClient,
+		},
 	}
 
-	func NewPostgresLocationDatabase(db *DB) *locationDatabase {
-		return &locationDatabase{
-			postgres: db,
-		}
-	}
-
-	func (ld *locationDatabase) GetLocation(id string) *Location {
-		panic("asdfasdf")
-	}
-
-	type cachedLocationDatabase struct {
-		cache map[string]*Location
-		implementation LocationRepository
-	}
-
-	func NewCachedLocationDatabase(repo LocationRepository) *cachedLocationDatabase {
-		return &cachedLocationDatabase{
-			implementation: repo,
-		}
-	}
-
-	func (ld *cachedLocationDatabase) GetLocation(id string) *Location {
-		// if we have it in our map just return it
-		// otherwise grab it from the implementation
-		// cache then
-		// then return it
-	}
-	*/
-
-	schemaConfig := generated.Config{
-		Resolvers: &resolvers.Resolver{},
-	}
-
-	srv := handler.NewDefaultServer(generated.NewExecutableSchema(schemaConfig))
+	srv := handler.NewDefaultServer(graph.NewExecutableSchema(schemaConfig))
 
 	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", srv)
