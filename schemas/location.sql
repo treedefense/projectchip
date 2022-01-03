@@ -11,7 +11,7 @@ CREATE TABLE courses (
     constraint fk_location_id
         FOREIGN KEY (location_id)
         REFERENCES locations (id)
-)
+);
 
 CREATE TABLE holes (
     id SERIAL PRIMARY KEY,
