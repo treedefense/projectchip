@@ -3,7 +3,7 @@ CREATE TABLE locations (
     name VARCHAR(100) NOT NULL
 );
 
-CREATE TABLE courses {
+CREATE TABLE courses (
     id SERIAL PRIMARY KEY,
     location_id INTEGER,
     name VARCHAR(100) NOT NULL,
@@ -11,7 +11,7 @@ CREATE TABLE courses {
     constraint fk_location_id
         FOREIGN KEY (location_id)
         REFERENCES locations (id)
-}
+)
 
 CREATE TABLE holes (
     id SERIAL PRIMARY KEY,

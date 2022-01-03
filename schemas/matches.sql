@@ -1,13 +1,13 @@
-CREATE TABLE matches {
+CREATE TABLE matches (
     id SERIAL PRIMARY KEY NOT NULL,
     course_id INTEGER,
 
     constraint fk_course_id
         FOREIGN KEY (course_id)
         REFERENCES courses (id)
-}
+)
 
-CREATE TABLE match_participants {
+CREATE TABLE match_participants (
     account_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
 
@@ -20,9 +20,9 @@ CREATE TABLE match_participants {
         REFERENCES matches (id),
 
     PRIMARY KEY (match_id, account_id)
-}
+)
 
-CREATE TABLE match_strokes {
+CREATE TABLE match_strokes (
     account_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
     hole_id INTEGER NOT NULL,
@@ -43,4 +43,4 @@ CREATE TABLE match_strokes {
         REFERENCES holes (id),
 
     PRIMARY KEY (match_id, account_id, match_order)
-}
+)
