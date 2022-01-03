@@ -1,0 +1,6 @@
+query findLocationNames {
+  locations {
+    id
+    name
+  }
+}

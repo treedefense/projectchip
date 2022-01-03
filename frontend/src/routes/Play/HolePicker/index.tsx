@@ -1,27 +1,24 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { GetLocation, CreateMatch } from '../../../db';
+import { CreateMatch } from '../../../db';
 import { matchesPath } from '../../paths';
+import { useFindLocationHolesQuery } from '../../../graphql';
 
 export function HolePicker() {
   const [searchParams] = useSearchParams();
+  // TODO: Switch to local storage or something later
+  const id = searchParams.get('locationId') || '';
+
   const navigate = useNavigate();
-  const [selectedHoles, setSelectedHoles] = useState<Record<number, Boolean>>({});
+  const [selectedHoles, setSelectedHoles] = useState<Record<string, Boolean>>({});
 
-  const id = searchParams.get('locationId');
-  if (!id) {
-    // should redirect back to /play
-    return <div></div>
-  }
+  const { data, loading, error } = useFindLocationHolesQuery({
+    variables: {
+      locationID: id,
+    }
+  });
 
-  const idAsNumber = parseInt(id, 10);
-  const location = GetLocation(idAsNumber);
-  if (!location) {
-    // should redirect back to /play
-    return <div></div>
-  }
-
-  const onHoleStateChanged = (id: number) => {
+  const onHoleStateChanged = (id: string) => {
     const isSelected = selectedHoles?.[id];
     setSelectedHoles({
       ...selectedHoles,
@@ -30,10 +27,17 @@ export function HolePicker() {
   }
 
   const onSubmit = () => {
+    if (!data || !data.location) {
+      return;
+    }
+
     // create a match here
-    const matchHoles = location.holes.filter(h => selectedHoles[h.id] === true);
+    const matchHoles = data.location.holes
+      .map(h => h.id)
+      .filter((id: string) => selectedHoles[id] === true);
+
     const matchId = CreateMatch({
-      location,
+      locationID: id,
       holes: matchHoles,
     });
 
@@ -44,23 +48,31 @@ export function HolePicker() {
   return (
     <main>
       <h2>Select holes</h2>
-      <ul>
-        {location.holes.map(hole => {
-          return (
-            <li key={hole.id}>
-              <label>
-                <input
-                  type="checkbox"
-                  name={hole.id.toString()}
-                  checked={selectedHoles[hole.id] === true}
-                  onChange={() => onHoleStateChanged(hole.id)}
-                />
-                {hole.id}
-              </label>
-            </li>
-          );
-        })}
-      </ul>
+      { loading && <div>Loading locations</div> }
+      { error && <div>Unable to load locations</div> }
+      { data && !data.location && <div>Unable to find that location</div> }
+      { data && data.location && <>
+        <ul>
+          {
+            data.location.holes.map(hole => {
+              return (
+                <li key={hole.id}>
+                  <label>
+                    <input
+                      type="checkbox"
+                      name={hole.id.toString()}
+                      checked={selectedHoles[hole.id] === true}
+                      onChange={() => onHoleStateChanged(hole.id)}
+                    />
+                    {hole.number}
+                  </label>
+                </li>
+              );
+            })
+          }
+          </ul>
+        </>
+      }
       <div>
         <button onClick={() => onSubmit()}>Submit</button>
       </div>

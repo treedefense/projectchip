@@ -1,0 +1,34 @@
+type Query {
+    location(id: ID!): Location
+    locations: [Location!]!
+}
+
+# type Mutation {
+    # createLocation(name: String!, holes: [HoleInputs]): Location!
+# }
+
+type Location {
+    # Unique ID for the location
+    id: ID!
+    # Name of the location
+    name: String!
+    # What holes are at this location
+    holes: [Hole!]!
+}
+
+type Hole {
+    # Unique ID for the hole
+    id: ID!
+    # What number hole on the course
+    number: Int!
+    # Name of the hole
+    name: String
+    # Strokes to make par
+    par: Int!
+}
+
+# input HoleInputs {
+    # number: Int!
+    # name: String
+    # par: Int!
+# }

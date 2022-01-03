@@ -1,6 +1,5 @@
 import React, { useState } from 'react';
-import { GetMatch } from 'db';
-import { Hole } from 'models';
+import { GetMatch } from '../../../db';
 import { useParams } from "react-router-dom";
 import { matchIdKey } from '../../paths';
 import './Match.css'
@@ -19,6 +18,7 @@ function StrokePicker({ strokes, setStrokes }: { strokes: number[]; setStrokes: 
   );
 }
 
+/*
 function ScoreView({ holes, strokes }: { holes: Hole[]; strokes: number[]; }) {
   let score = 0;
   for (let i = 0; i < strokes.length; i++) {
@@ -26,6 +26,7 @@ function ScoreView({ holes, strokes }: { holes: Hole[]; strokes: number[]; }) {
   }
   return <div>Score: {score > 0 ? '+' : ''}{score.toString()}</div>;
 }
+*/
 
 export function Match() {
     const params = useParams();
@@ -42,6 +43,9 @@ export function Match() {
       return <div></div>
     }
 
+    // these do not work yet
+    // <ScoreView holes={match.holes} strokes={strokes} />
+
     return (
       <main>
         <h2>This Match</h2>
@@ -49,18 +53,16 @@ export function Match() {
           <div>Hole</div>
           <div>Par</div>
           <div>Strokes</div>
-          {match.holes.map((hole, index) => {
+          {match.holeIDs.map((holeID, index) => {
             return (
-              <React.Fragment key={hole.id}>
-                <div>{hole.id}</div>
-                <div>{hole.par}</div>
+              <React.Fragment key={holeID}>
+                <div>{holeID}</div>
                 <div>{strokes[index] || '-'}</div>
               </React.Fragment>
             );
           })}
+          {strokes.length < match.holeIDs.length && <StrokePicker strokes={strokes} setStrokes={setStrokes} />}
         </div>
-        <ScoreView holes={match.holes} strokes={strokes} />
-        {strokes.length < match.holes.length && <StrokePicker strokes={strokes} setStrokes={setStrokes} />}   
       </main>
     );
   }

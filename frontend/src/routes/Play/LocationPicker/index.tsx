@@ -1,22 +1,24 @@
-import { GetLocations } from '../../../db';
 import { holePickerPath } from '../../paths';
 import { useNavigateSearch } from '../../../utils/navigateParams';
+import { useFindLocationNamesQuery } from '../../../graphql';
 
 export function LocationPicker() {
-  const locations = GetLocations();
+  const { data, loading, error } = useFindLocationNamesQuery();
   const navigate = useNavigateSearch();
 
   return (
     <main>
-      {locations.map((location) => {
+      { loading && <div>Loading locations</div> }
+      { error && <div>Unable to load locations</div> }
+      { data && data.locations.map(loc => {
         return (
           <button
-            key={location.id}
+            key={loc.id}
             onClick={() => navigate(holePickerPath, {
-              locationId: location.id.toString(),
+              locationId: loc.id.toString(),
             })}
           >
-            {location.name}
+            {loc.name}
           </button>
         );
       })}

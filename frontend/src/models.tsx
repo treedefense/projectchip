@@ -1,17 +1,7 @@
-export interface Location {
-  id: number; // unique location id
-  name: string;
-  holes: Hole[];
-}
-
-export interface Hole {
-  id: number; // unique hole id per location
-  par: number;
-}
-
+// TODO: Switch to using graphql types
 export interface Match {
-  id: number;
-  location: Location;
-  holes: Hole[];
+  id: string;
+  locationID: string;
+  holeIDs: string[]; // ID's of the holes we are playing in order
   strokes: number[];
 }
