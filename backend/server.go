@@ -1,6 +1,6 @@
 package main
 
-//go:generate go run github.com/kyleconroy/sqlc/cmd/sqlc generate
+//go:generate go run github.com/opendoor/pggen/cmd/pggen -o models.gen.go -c $DB_URL pggen.toml
 //go:generate go run github.com/99designs/gqlgen
 
 import (

@@ -5,26 +5,28 @@ package resolvers
 
 import (
 	"context"
-	"fmt"
 
 	"github.com/treedefense/projectchip/db"
 	"github.com/treedefense/projectchip/graph/generated"
 )
 
 func (r *holeResolver) Number(ctx context.Context, obj *db.Hole) (int32, error) {
-	panic(fmt.Errorf("not implemented"))
+	return int32(obj.Number), nil
 }
 
 func (r *holeResolver) Name(ctx context.Context, obj *db.Hole) (*string, error) {
-	panic(fmt.Errorf("not implemented"))
+	if obj.Name.Valid {
+		return &obj.Name.String, nil
+	}
+	return nil, nil
 }
 
 func (r *holeResolver) Par(ctx context.Context, obj *db.Hole) (int32, error) {
-	panic(fmt.Errorf("not implemented"))
+	return int32(obj.Par), nil
 }
 
 func (r *locationResolver) Holes(ctx context.Context, obj *db.Location) ([]*db.Hole, error) {
-	panic(fmt.Errorf("not implemented"))
+	return nil, nil
 }
 
 func (r *queryResolver) Location(ctx context.Context, id int64) (*db.Location, error) {
