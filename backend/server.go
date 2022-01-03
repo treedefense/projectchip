@@ -1,7 +1,7 @@
 package main
 
-//go:generate go run github.com/opendoor/pggen/cmd/pggen -o models.gen.go -c $DB_URL pggen.toml
-//go:generate go run github.com/99designs/gqlgen
+//go:generate go run github.com/opendoor/pggen/cmd/pggen -o db/models.gen.go -c $DB_URL pggen.toml
+//broken:::: go:generate go run github.com/99designs/gqlgen
 
 import (
 	"log"

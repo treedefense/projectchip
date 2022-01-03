@@ -12,7 +12,7 @@ import (
 
 	"github.com/99designs/gqlgen/graphql"
 	"github.com/99designs/gqlgen/graphql/introspection"
-	"github.com/treedefense/projectchip/db"
+	"github.com/treedefense/projectchip/graph/model"
 	gqlparser "github.com/vektah/gqlparser/v2"
 	"github.com/vektah/gqlparser/v2/ast"
 )
@@ -35,8 +35,6 @@ type Config struct {
 }
 
 type ResolverRoot interface {
-	Hole() HoleResolver
-	Location() LocationResolver
 	Query() QueryResolver
 }
 
@@ -63,17 +61,9 @@ type ComplexityRoot struct {
 	}
 }
 
-type HoleResolver interface {
-	Number(ctx context.Context, obj *db.Hole) (int32, error)
-	Name(ctx context.Context, obj *db.Hole) (*string, error)
-	Par(ctx context.Context, obj *db.Hole) (int32, error)
-}
-type LocationResolver interface {
-	Holes(ctx context.Context, obj *db.Location) ([]*db.Hole, error)
-}
 type QueryResolver interface {
-	Location(ctx context.Context, id int64) (*db.Location, error)
-	Locations(ctx context.Context) ([]*db.Location, error)
+	Location(ctx context.Context, id int64) (*model.Location, error)
+	Locations(ctx context.Context) ([]*model.Location, error)
 }
 
 type executableSchema struct {
@@ -319,7 +309,7 @@ func (ec *executionContext) field___Type_fields_args(ctx context.Context, rawArg
 
 // region    **************************** field.gotpl *****************************
 
-func (ec *executionContext) _Hole_id(ctx context.Context, field graphql.CollectedField, obj *db.Hole) (ret graphql.Marshaler) {
+func (ec *executionContext) _Hole_id(ctx context.Context, field graphql.CollectedField, obj *model.Hole) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -354,7 +344,7 @@ func (ec *executionContext) _Hole_id(ctx context.Context, field graphql.Collecte
 	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Hole_number(ctx context.Context, field graphql.CollectedField, obj *db.Hole) (ret graphql.Marshaler) {
+func (ec *executionContext) _Hole_number(ctx context.Context, field graphql.CollectedField, obj *model.Hole) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -365,14 +355,14 @@ func (ec *executionContext) _Hole_number(ctx context.Context, field graphql.Coll
 		Object:     "Hole",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Hole().Number(rctx, obj)
+		return obj.Number, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -389,7 +379,7 @@ func (ec *executionContext) _Hole_number(ctx context.Context, field graphql.Coll
 	return ec.marshalNInt2int32(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Hole_name(ctx context.Context, field graphql.CollectedField, obj *db.Hole) (ret graphql.Marshaler) {
+func (ec *executionContext) _Hole_name(ctx context.Context, field graphql.CollectedField, obj *model.Hole) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -400,14 +390,14 @@ func (ec *executionContext) _Hole_name(ctx context.Context, field graphql.Collec
 		Object:     "Hole",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Hole().Name(rctx, obj)
+		return obj.Name, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -421,7 +411,7 @@ func (ec *executionContext) _Hole_name(ctx context.Context, field graphql.Collec
 	return ec.marshalOString2ᚖstring(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Hole_par(ctx context.Context, field graphql.CollectedField, obj *db.Hole) (ret graphql.Marshaler) {
+func (ec *executionContext) _Hole_par(ctx context.Context, field graphql.CollectedField, obj *model.Hole) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -432,14 +422,14 @@ func (ec *executionContext) _Hole_par(ctx context.Context, field graphql.Collect
 		Object:     "Hole",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Hole().Par(rctx, obj)
+		return obj.Par, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -456,7 +446,7 @@ func (ec *executionContext) _Hole_par(ctx context.Context, field graphql.Collect
 	return ec.marshalNInt2int32(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Location_id(ctx context.Context, field graphql.CollectedField, obj *db.Location) (ret graphql.Marshaler) {
+func (ec *executionContext) _Location_id(ctx context.Context, field graphql.CollectedField, obj *model.Location) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -491,7 +481,7 @@ func (ec *executionContext) _Location_id(ctx context.Context, field graphql.Coll
 	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Location_name(ctx context.Context, field graphql.CollectedField, obj *db.Location) (ret graphql.Marshaler) {
+func (ec *executionContext) _Location_name(ctx context.Context, field graphql.CollectedField, obj *model.Location) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -526,7 +516,7 @@ func (ec *executionContext) _Location_name(ctx context.Context, field graphql.Co
 	return ec.marshalNString2string(ctx, field.Selections, res)
 }
 
-func (ec *executionContext) _Location_holes(ctx context.Context, field graphql.CollectedField, obj *db.Location) (ret graphql.Marshaler) {
+func (ec *executionContext) _Location_holes(ctx context.Context, field graphql.CollectedField, obj *model.Location) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
 			ec.Error(ctx, ec.Recover(ctx, r))
@@ -537,14 +527,14 @@ func (ec *executionContext) _Location_holes(ctx context.Context, field graphql.C
 		Object:     "Location",
 		Field:      field,
 		Args:       nil,
-		IsMethod:   true,
-		IsResolver: true,
+		IsMethod:   false,
+		IsResolver: false,
 	}
 
 	ctx = graphql.WithFieldContext(ctx, fc)
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Location().Holes(rctx, obj)
+		return obj.Holes, nil
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -556,9 +546,9 @@ func (ec *executionContext) _Location_holes(ctx context.Context, field graphql.C
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*db.Hole)
+	res := resTmp.([]*model.Hole)
 	fc.Result = res
-	return ec.marshalNHole2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐHoleᚄ(ctx, field.Selections, res)
+	return ec.marshalNHole2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐHoleᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_location(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -595,9 +585,9 @@ func (ec *executionContext) _Query_location(ctx context.Context, field graphql.C
 	if resTmp == nil {
 		return graphql.Null
 	}
-	res := resTmp.(*db.Location)
+	res := resTmp.(*model.Location)
 	fc.Result = res
-	return ec.marshalOLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocation(ctx, field.Selections, res)
+	return ec.marshalOLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐLocation(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_locations(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -630,9 +620,9 @@ func (ec *executionContext) _Query_locations(ctx context.Context, field graphql.
 		}
 		return graphql.Null
 	}
-	res := resTmp.([]*db.Location)
+	res := resTmp.([]*model.Location)
 	fc.Result = res
-	return ec.marshalNLocation2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocationᚄ(ctx, field.Selections, res)
+	return ec.marshalNLocation2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐLocationᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1838,7 +1828,7 @@ func (ec *executionContext) ___Type_ofType(ctx context.Context, field graphql.Co
 
 var holeImplementors = []string{"Hole"}
 
-func (ec *executionContext) _Hole(ctx context.Context, sel ast.SelectionSet, obj *db.Hole) graphql.Marshaler {
+func (ec *executionContext) _Hole(ctx context.Context, sel ast.SelectionSet, obj *model.Hole) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, holeImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -1850,47 +1840,20 @@ func (ec *executionContext) _Hole(ctx context.Context, sel ast.SelectionSet, obj
 		case "id":
 			out.Values[i] = ec._Hole_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "number":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Hole_number(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Hole_number(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		case "name":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Hole_name(ctx, field, obj)
-				return res
-			})
+			out.Values[i] = ec._Hole_name(ctx, field, obj)
 		case "par":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Hole_par(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Hole_par(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -1904,7 +1867,7 @@ func (ec *executionContext) _Hole(ctx context.Context, sel ast.SelectionSet, obj
 
 var locationImplementors = []string{"Location"}
 
-func (ec *executionContext) _Location(ctx context.Context, sel ast.SelectionSet, obj *db.Location) graphql.Marshaler {
+func (ec *executionContext) _Location(ctx context.Context, sel ast.SelectionSet, obj *model.Location) graphql.Marshaler {
 	fields := graphql.CollectFields(ec.OperationContext, sel, locationImplementors)
 
 	out := graphql.NewFieldSet(fields)
@@ -1916,27 +1879,18 @@ func (ec *executionContext) _Location(ctx context.Context, sel ast.SelectionSet,
 		case "id":
 			out.Values[i] = ec._Location_id(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "name":
 			out.Values[i] = ec._Location_name(ctx, field, obj)
 			if out.Values[i] == graphql.Null {
-				atomic.AddUint32(&invalids, 1)
+				invalids++
 			}
 		case "holes":
-			field := field
-			out.Concurrently(i, func() (res graphql.Marshaler) {
-				defer func() {
-					if r := recover(); r != nil {
-						ec.Error(ctx, ec.Recover(ctx, r))
-					}
-				}()
-				res = ec._Location_holes(ctx, field, obj)
-				if res == graphql.Null {
-					atomic.AddUint32(&invalids, 1)
-				}
-				return res
-			})
+			out.Values[i] = ec._Location_holes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
 		default:
 			panic("unknown field " + strconv.Quote(field.Name))
 		}
@@ -2268,7 +2222,7 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 	return res
 }
 
-func (ec *executionContext) marshalNHole2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐHoleᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.Hole) graphql.Marshaler {
+func (ec *executionContext) marshalNHole2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐHoleᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Hole) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2292,7 +2246,7 @@ func (ec *executionContext) marshalNHole2ᚕᚖgithubᚗcomᚋtreedefenseᚋproj
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNHole2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐHole(ctx, sel, v[i])
+			ret[i] = ec.marshalNHole2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐHole(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2312,7 +2266,7 @@ func (ec *executionContext) marshalNHole2ᚕᚖgithubᚗcomᚋtreedefenseᚋproj
 	return ret
 }
 
-func (ec *executionContext) marshalNHole2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐHole(ctx context.Context, sel ast.SelectionSet, v *db.Hole) graphql.Marshaler {
+func (ec *executionContext) marshalNHole2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐHole(ctx context.Context, sel ast.SelectionSet, v *model.Hole) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -2352,7 +2306,7 @@ func (ec *executionContext) marshalNInt2int32(ctx context.Context, sel ast.Selec
 	return res
 }
 
-func (ec *executionContext) marshalNLocation2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocationᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.Location) graphql.Marshaler {
+func (ec *executionContext) marshalNLocation2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐLocationᚄ(ctx context.Context, sel ast.SelectionSet, v []*model.Location) graphql.Marshaler {
 	ret := make(graphql.Array, len(v))
 	var wg sync.WaitGroup
 	isLen1 := len(v) == 1
@@ -2376,7 +2330,7 @@ func (ec *executionContext) marshalNLocation2ᚕᚖgithubᚗcomᚋtreedefenseᚋ
 			if !isLen1 {
 				defer wg.Done()
 			}
-			ret[i] = ec.marshalNLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocation(ctx, sel, v[i])
+			ret[i] = ec.marshalNLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐLocation(ctx, sel, v[i])
 		}
 		if isLen1 {
 			f(i)
@@ -2396,7 +2350,7 @@ func (ec *executionContext) marshalNLocation2ᚕᚖgithubᚗcomᚋtreedefenseᚋ
 	return ret
 }
 
-func (ec *executionContext) marshalNLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocation(ctx context.Context, sel ast.SelectionSet, v *db.Location) graphql.Marshaler {
+func (ec *executionContext) marshalNLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐLocation(ctx context.Context, sel ast.SelectionSet, v *model.Location) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
 			ec.Errorf(ctx, "must not be null")
@@ -2702,7 +2656,7 @@ func (ec *executionContext) marshalOBoolean2ᚖbool(ctx context.Context, sel ast
 	return graphql.MarshalBoolean(*v)
 }
 
-func (ec *executionContext) marshalOLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocation(ctx context.Context, sel ast.SelectionSet, v *db.Location) graphql.Marshaler {
+func (ec *executionContext) marshalOLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚋmodelᚐLocation(ctx context.Context, sel ast.SelectionSet, v *model.Location) graphql.Marshaler {
 	if v == nil {
 		return graphql.Null
 	}

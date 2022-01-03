@@ -4,6 +4,7 @@ go 1.17
 
 require (
 	github.com/99designs/gqlgen v0.14.0
+	github.com/ethanpailes/pgtypes v0.0.0-20210319175856-9f6ab13c3655
 	github.com/jackc/pgconn v1.10.1
 	github.com/jackc/pgx/v4 v4.14.0
 	github.com/opendoor/pggen v0.3.2
@@ -14,7 +15,6 @@ require (
 	github.com/BurntSushi/toml v0.3.1 // indirect
 	github.com/agnivade/levenshtein v1.1.0 // indirect
 	github.com/cpuguy83/go-md2man/v2 v2.0.0 // indirect
-	github.com/ethanpailes/pgtypes v0.0.0-20210319175856-9f6ab13c3655 // indirect
 	github.com/gorilla/websocket v1.4.2 // indirect
 	github.com/hashicorp/golang-lru v0.5.1 // indirect
 	github.com/jackc/chunkreader/v2 v2.0.1 // indirect

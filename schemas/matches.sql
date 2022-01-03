@@ -1,5 +1,5 @@
 CREATE TABLE matches (
-    id SERIAL PRIMARY KEY NOT NULL,
+    id SERIAL PRIMARY KEY,
     course_id INTEGER,
 
     constraint fk_course_id
@@ -8,6 +8,7 @@ CREATE TABLE matches (
 );
 
 CREATE TABLE match_participants (
+    id SERIAL PRIMARY KEY,
     account_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
 
@@ -17,12 +18,11 @@ CREATE TABLE match_participants (
 
     constraint fk_match_id
         FOREIGN KEY (match_id)
-        REFERENCES matches (id),
-
-    PRIMARY KEY (match_id, account_id)
+        REFERENCES matches (id)
 );
 
 CREATE TABLE match_strokes (
+    id SERIAL PRIMARY KEY,
     account_id INTEGER NOT NULL,
     match_id INTEGER NOT NULL,
     hole_id INTEGER NOT NULL,
@@ -40,7 +40,5 @@ CREATE TABLE match_strokes (
 
     constraint fk_hole_id
         FOREIGN KEY (hole_id)
-        REFERENCES holes (id),
-
-    PRIMARY KEY (match_id, account_id, match_order)
+        REFERENCES holes (id)
 );
