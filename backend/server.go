@@ -31,7 +31,7 @@ func main() {
 		dbUrl = "postgres://postgres:password@localhost/projectchip"
 	}
 
-	conn, err := sql.Open("pgx", os.Getenv("DB_URL"))
+	conn, err := sql.Open("pgx", dbUrl)
 	if err != nil {
 		log.Fatal(err)
 	}

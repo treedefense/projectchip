@@ -25,3 +25,21 @@
 	body = '''
 	SELECT * FROM locations;
 	'''
+
+[[query]]
+	name = "GetCoursesAtLocation"
+	return_type = "[]*Course"
+	arg_names = "1:locationId"
+	body = '''
+	SELECT * FROM courses
+	WHERE location_id = $1;
+	'''
+
+[[query]]
+	name = "GetHolesAtCourse"
+	return_type = "[]*Hole"
+	arg_names = "1:courseId"
+	body = '''
+	SELECT * FROM holes
+	WHERE course_id = $1;
+	'''

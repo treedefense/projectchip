@@ -66,7 +66,34 @@ func (r *queryResolver) Locations(ctx context.Context) ([]*db.Location, error) {
 	for i := range pls {
 		locs = append(locs, &pls[i])
 	}
+
 	return locs, nil
+}
+
+func (r *queryResolver) CoursesAtLocation(ctx context.Context, id int64) ([]*db.Course, error) {
+	pcs, err := r.Db.GetCoursesAtLocation(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var courses []*db.Course
+	for i := range pcs {
+		courses = append(courses, &pcs[i])
+	}
+	return courses, nil
+}
+
+func (r *queryResolver) HolesAtCourse(ctx context.Context, id int64) ([]*db.Hole, error) {
+	phs, err := r.Db.GetHolesAtCourse(ctx, id)
+	if err != nil {
+		return nil, err
+	}
+
+	var holes []*db.Hole
+	for i := range phs {
+		holes = append(holes, &phs[i])
+	}
+	return holes, nil
 }
 
 func (r *queryResolver) Course(ctx context.Context, id int64) (*db.Course, error) {

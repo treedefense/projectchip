@@ -27,22 +27,26 @@ type PGClient struct {
 	// saw in the table we used to generate code. This means that you don't have to worry
 	// about migrations merging in a slightly different order than their timestamps have
 	// breaking 'SELECT *'.
-	rwlockForAccount               sync.RWMutex
-	colIdxTabForAccount            []int
-	rwlockForLocation              sync.RWMutex
-	colIdxTabForLocation           []int
-	rwlockForCourse                sync.RWMutex
-	colIdxTabForCourse             []int
-	rwlockForHole                  sync.RWMutex
-	colIdxTabForHole               []int
-	rwlockForMatch                 sync.RWMutex
-	colIdxTabForMatch              []int
-	rwlockForMatchParticipant      sync.RWMutex
-	colIdxTabForMatchParticipant   []int
-	rwlockForMatchStroke           sync.RWMutex
-	colIdxTabForMatchStroke        []int
-	rwlockForGetAllLocationsRow    sync.RWMutex
-	colIdxTabForGetAllLocationsRow []int
+	rwlockForAccount                    sync.RWMutex
+	colIdxTabForAccount                 []int
+	rwlockForLocation                   sync.RWMutex
+	colIdxTabForLocation                []int
+	rwlockForCourse                     sync.RWMutex
+	colIdxTabForCourse                  []int
+	rwlockForHole                       sync.RWMutex
+	colIdxTabForHole                    []int
+	rwlockForMatch                      sync.RWMutex
+	colIdxTabForMatch                   []int
+	rwlockForMatchParticipant           sync.RWMutex
+	colIdxTabForMatchParticipant        []int
+	rwlockForMatchStroke                sync.RWMutex
+	colIdxTabForMatchStroke             []int
+	rwlockForGetAllLocationsRow         sync.RWMutex
+	colIdxTabForGetAllLocationsRow      []int
+	rwlockForGetCoursesAtLocationRow    sync.RWMutex
+	colIdxTabForGetCoursesAtLocationRow []int
+	rwlockForGetHolesAtCourseRow        sync.RWMutex
+	colIdxTabForGetHolesAtCourseRow     []int
 }
 
 // bogus usage so we can compile with no tables configured
@@ -7219,6 +7223,222 @@ func (p *pgClientImpl) GetAllLocationsQuery(
 	)
 }
 
+func (p *PGClient) GetCoursesAtLocation(
+	ctx context.Context,
+	locationId int64,
+) (ret []Course, err error) {
+	return p.impl.GetCoursesAtLocation(
+		ctx,
+		locationId,
+	)
+}
+
+func (tx *TxPGClient) GetCoursesAtLocation(
+	ctx context.Context,
+	locationId int64,
+) (ret []Course, err error) {
+	return tx.impl.GetCoursesAtLocation(
+		ctx,
+		locationId,
+	)
+}
+
+func (conn *ConnPGClient) GetCoursesAtLocation(
+	ctx context.Context,
+	locationId int64,
+) (ret []Course, err error) {
+	return conn.impl.GetCoursesAtLocation(
+		ctx,
+		locationId,
+	)
+}
+func (p *pgClientImpl) GetCoursesAtLocation(
+	ctx context.Context,
+	locationId int64,
+) (ret []Course, err error) {
+	ret = []Course{}
+
+	var rows *sql.Rows
+	rows, err = p.GetCoursesAtLocationQuery(
+		ctx,
+		locationId,
+	)
+	if err != nil {
+		return nil, p.client.errorConverter(err)
+	}
+	defer func() {
+		if err == nil {
+			err = rows.Close()
+			if err != nil {
+				ret = nil
+				err = p.client.errorConverter(err)
+			}
+		} else {
+			rowErr := rows.Close()
+			if rowErr != nil {
+				err = p.client.errorConverter(fmt.Errorf("%s AND %s", err.Error(), rowErr.Error()))
+			}
+		}
+	}()
+
+	for rows.Next() {
+		var row Course
+		err = row.Scan(ctx, p.client, rows)
+		ret = append(ret, row)
+	}
+
+	return
+}
+
+func (p *PGClient) GetCoursesAtLocationQuery(
+	ctx context.Context,
+	locationId int64,
+) (*sql.Rows, error) {
+	return p.impl.GetCoursesAtLocationQuery(
+		ctx,
+		locationId,
+	)
+}
+
+func (tx *TxPGClient) GetCoursesAtLocationQuery(
+	ctx context.Context,
+	locationId int64,
+) (*sql.Rows, error) {
+	return tx.impl.GetCoursesAtLocationQuery(
+		ctx,
+		locationId,
+	)
+}
+
+func (conn *ConnPGClient) GetCoursesAtLocationQuery(
+	ctx context.Context,
+	locationId int64,
+) (*sql.Rows, error) {
+	return conn.impl.GetCoursesAtLocationQuery(
+		ctx,
+		locationId,
+	)
+}
+func (p *pgClientImpl) GetCoursesAtLocationQuery(
+	ctx context.Context,
+	locationId int64,
+) (*sql.Rows, error) {
+	return p.queryContext(
+		ctx,
+		`SELECT * FROM courses
+	WHERE location_id = $1;`,
+		locationId,
+	)
+}
+
+func (p *PGClient) GetHolesAtCourse(
+	ctx context.Context,
+	courseId int64,
+) (ret []Hole, err error) {
+	return p.impl.GetHolesAtCourse(
+		ctx,
+		courseId,
+	)
+}
+
+func (tx *TxPGClient) GetHolesAtCourse(
+	ctx context.Context,
+	courseId int64,
+) (ret []Hole, err error) {
+	return tx.impl.GetHolesAtCourse(
+		ctx,
+		courseId,
+	)
+}
+
+func (conn *ConnPGClient) GetHolesAtCourse(
+	ctx context.Context,
+	courseId int64,
+) (ret []Hole, err error) {
+	return conn.impl.GetHolesAtCourse(
+		ctx,
+		courseId,
+	)
+}
+func (p *pgClientImpl) GetHolesAtCourse(
+	ctx context.Context,
+	courseId int64,
+) (ret []Hole, err error) {
+	ret = []Hole{}
+
+	var rows *sql.Rows
+	rows, err = p.GetHolesAtCourseQuery(
+		ctx,
+		courseId,
+	)
+	if err != nil {
+		return nil, p.client.errorConverter(err)
+	}
+	defer func() {
+		if err == nil {
+			err = rows.Close()
+			if err != nil {
+				ret = nil
+				err = p.client.errorConverter(err)
+			}
+		} else {
+			rowErr := rows.Close()
+			if rowErr != nil {
+				err = p.client.errorConverter(fmt.Errorf("%s AND %s", err.Error(), rowErr.Error()))
+			}
+		}
+	}()
+
+	for rows.Next() {
+		var row Hole
+		err = row.Scan(ctx, p.client, rows)
+		ret = append(ret, row)
+	}
+
+	return
+}
+
+func (p *PGClient) GetHolesAtCourseQuery(
+	ctx context.Context,
+	courseId int64,
+) (*sql.Rows, error) {
+	return p.impl.GetHolesAtCourseQuery(
+		ctx,
+		courseId,
+	)
+}
+
+func (tx *TxPGClient) GetHolesAtCourseQuery(
+	ctx context.Context,
+	courseId int64,
+) (*sql.Rows, error) {
+	return tx.impl.GetHolesAtCourseQuery(
+		ctx,
+		courseId,
+	)
+}
+
+func (conn *ConnPGClient) GetHolesAtCourseQuery(
+	ctx context.Context,
+	courseId int64,
+) (*sql.Rows, error) {
+	return conn.impl.GetHolesAtCourseQuery(
+		ctx,
+		courseId,
+	)
+}
+func (p *pgClientImpl) GetHolesAtCourseQuery(
+	ctx context.Context,
+	courseId int64,
+) (*sql.Rows, error) {
+	return p.queryContext(
+		ctx,
+		`SELECT * FROM holes
+	WHERE course_id = $1;`,
+		courseId,
+	)
+}
+
 type DBQueries interface {
 	//
 	// automatic CRUD methods
@@ -7325,6 +7545,26 @@ type DBQueries interface {
 	) ([]Location, error)
 	GetAllLocationsQuery(
 		ctx context.Context,
+	) (*sql.Rows, error)
+
+	// GetCoursesAtLocation query
+	GetCoursesAtLocation(
+		ctx context.Context,
+		locationId int64,
+	) ([]Course, error)
+	GetCoursesAtLocationQuery(
+		ctx context.Context,
+		locationId int64,
+	) (*sql.Rows, error)
+
+	// GetHolesAtCourse query
+	GetHolesAtCourse(
+		ctx context.Context,
+		courseId int64,
+	) ([]Hole, error)
+	GetHolesAtCourseQuery(
+		ctx context.Context,
+		courseId int64,
 	) (*sql.Rows, error)
 
 	//
