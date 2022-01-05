@@ -2,6 +2,7 @@ type Query {
     location(id: ID!): Location
     locations: [Location!]!
 
+    # not required anymore but keeping around for now
     coursesAtLocation(id: ID!): [Course]
     holesAtCourse(id: ID!): [Hole]
 
@@ -16,12 +17,13 @@ type Mutation {
 type Location {
     id: ID!
     name: String!
+    courses: [Course]
 }
 
 type Course {
     id: ID!
     name: String!
-    holes: [Hole!]!
+    holes: [Hole]
 }
 
 type Hole {
