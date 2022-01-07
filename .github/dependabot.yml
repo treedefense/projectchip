@@ -7,6 +7,19 @@ updates:
     schedule:
       interval: "weekly"
       day: "friday"
+      time: "18:00"
+      timezone: "America/Los_Angeles"
+    labels:
+      - "skip changelog"
+      - "dependencies"
+
+  - package-ecosystem: "gomod"
+    directory: "/backend"
+    schedule:
+      interval: "weekly"
+      day: "friday"
+      time: "18:00"
+      timezone: "America/Los_Angeles"
     labels:
       - "skip changelog"
       - "dependencies"
