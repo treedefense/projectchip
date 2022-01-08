@@ -1,0 +1,4 @@
+type Mutation {
+    createAccount(nickname: String!, email: String!): Account!
+    createLocation(name: String!, courses: [CourseInputs]): Location!
+}
