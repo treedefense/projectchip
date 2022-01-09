@@ -6,6 +6,7 @@ package resolvers
 import (
 	"context"
 
+	"github.com/opendoor/pggen"
 	"github.com/treedefense/projectchip/db"
 	"github.com/treedefense/projectchip/graph"
 )
@@ -20,17 +21,15 @@ func (r *mutationResolver) CreateAccount(ctx context.Context, nickname string, e
 	return acc, err
 }
 
-func (r *mutationResolver) CreateLocation(ctx context.Context, name string, courses []*graph.CourseInputs) (*db.Location, error) {
+func (r *mutationResolver) CreateLocation(ctx context.Context, name string, courses []*graph.CourseInputs) (int64, error) {
 	loc := &db.Location{
 		Name: name,
 	}
 
 	locId, err := r.Db.InsertLocation(ctx, loc)
 	if err != nil {
-		return nil, err
+		return 0, err
 	}
-
-	loc.Id = locId
 
 	for _, courseInput := range courses {
 		c := &db.Course{
@@ -39,10 +38,8 @@ func (r *mutationResolver) CreateLocation(ctx context.Context, name string, cour
 		}
 		courseId, err := r.Db.InsertCourse(ctx, c)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
-
-		c.Id = courseId
 
 		var holes []db.Hole
 		for _, holeInput := range courseInput.Holes {
@@ -55,11 +52,66 @@ func (r *mutationResolver) CreateLocation(ctx context.Context, name string, cour
 
 		_, err = r.Db.BulkInsertHole(ctx, holes)
 		if err != nil {
-			return nil, err
+			return 0, err
 		}
 	}
 
-	return loc, nil
+	return locId, nil
+}
+
+func (r *mutationResolver) CreateMatch(ctx context.Context, newMatch *graph.NewMatch) (int64, error) {
+	var err error
+	match := &db.Match{
+		CourseId: &newMatch.CourseID,
+	}
+
+	_, err = r.Db.GetCourse(ctx, newMatch.CourseID)
+	if err != nil {
+		return 0, err
+	}
+
+	matchId, err := r.Db.InsertMatch(ctx, match)
+	if err != nil {
+		return 0, err
+	}
+
+	var participants []db.MatchParticipant
+	var strokes []db.MatchStroke
+	for _, aId := range newMatch.ParticipantIds {
+		participants = append(participants, db.MatchParticipant{
+			MatchId:   matchId,
+			AccountId: aId,
+		})
+		for i, holeId := range newMatch.HoleIds {
+			strokes = append(strokes, db.MatchStroke{
+				MatchId:    matchId,
+				AccountId:  aId,
+				HoleId:     holeId,
+				Strokes:    0,
+				MatchOrder: int64(i),
+			})
+		}
+	}
+
+	_, err = r.Db.BulkInsertMatchParticipant(ctx, participants)
+	if err != nil {
+		return 0, err
+	}
+
+	r.Db.BulkInsertMatchStroke(ctx, strokes)
+	if err != nil {
+		return 0, err
+	}
+
+	return matchId, nil
+}
+
+func (r *mutationResolver) PushStrokes(ctx context.Context, id int64, strokes int32) (int64, error) {
+	updateFields := pggen.NewFieldSet(1).
+		Set(db.MatchStrokeIdFieldIndex, true).
+		Set(db.MatchStrokeStrokesFieldIndex, true)
+	r.Db.UpdateMatchStroke(ctx, &db.MatchStroke{Id: id, Strokes: int64(strokes)}, updateFields)
+	return id, nil
 }
 
 // Mutation returns graph.MutationResolver implementation.

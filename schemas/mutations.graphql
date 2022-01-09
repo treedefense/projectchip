@@ -1,4 +1,6 @@
 type Mutation {
     createAccount(nickname: String!, email: String!): Account!
-    createLocation(name: String!, courses: [CourseInputs]): Location!
+    createLocation(name: String!, courses: [CourseInputs]): ID!
+    createMatch(newMatch: NewMatch): ID!
+    pushStrokes(id: ID!, strokes: Int!): ID!
 }

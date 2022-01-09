@@ -1,17 +1,20 @@
 type Query {
     # accounts
-    account(id: ID!): Account
+    account(account_id: ID!): Account
 
     # locations
-    location(id: ID!): Location
+    location(location_id: ID!): Location
     locations: [Location!]!
 
     # slightly more efficient requests if you already know the parent ID
-    coursesAtLocation(id: ID!): [Course]
-    holesAtCourse(id: ID!): [Hole]
+    coursesAtLocation(location_id: ID!): [Course]
+    holesAtCourse(course_id: ID!): [Hole]
 
-    course(id: ID!): Course
-    hole(id: ID!): Hole
+    course(course_id: ID!): Course
+    hole(hole_id: ID!): Hole
 
     # matches
+    match(match_id: ID!): Match
+    matchesForAccount(account_id: ID!): [Match!]
+    matchStrokes(match_id: ID!): [MatchStroke!]!
 }

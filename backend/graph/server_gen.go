@@ -37,6 +37,7 @@ type Config struct {
 type ResolverRoot interface {
 	Course() CourseResolver
 	Location() LocationResolver
+	Match() MatchResolver
 	Mutation() MutationResolver
 	Query() QueryResolver
 }
@@ -69,19 +70,39 @@ type ComplexityRoot struct {
 		Name    func(childComplexity int) int
 	}
 
+	Match struct {
+		Course       func(childComplexity int) int
+		Id           func(childComplexity int) int
+		Participants func(childComplexity int) int
+		Strokes      func(childComplexity int) int
+	}
+
+	MatchStroke struct {
+		Account func(childComplexity int) int
+		Hole    func(childComplexity int) int
+		Id      func(childComplexity int) int
+		Match   func(childComplexity int) int
+		Strokes func(childComplexity int) int
+	}
+
 	Mutation struct {
 		CreateAccount  func(childComplexity int, nickname string, email string) int
 		CreateLocation func(childComplexity int, name string, courses []*CourseInputs) int
+		CreateMatch    func(childComplexity int, newMatch *NewMatch) int
+		PushStrokes    func(childComplexity int, id int64, strokes int32) int
 	}
 
 	Query struct {
-		Account           func(childComplexity int, id int64) int
-		Course            func(childComplexity int, id int64) int
-		CoursesAtLocation func(childComplexity int, id int64) int
-		Hole              func(childComplexity int, id int64) int
-		HolesAtCourse     func(childComplexity int, id int64) int
-		Location          func(childComplexity int, id int64) int
+		Account           func(childComplexity int, accountID int64) int
+		Course            func(childComplexity int, courseID int64) int
+		CoursesAtLocation func(childComplexity int, locationID int64) int
+		Hole              func(childComplexity int, holeID int64) int
+		HolesAtCourse     func(childComplexity int, courseID int64) int
+		Location          func(childComplexity int, locationID int64) int
 		Locations         func(childComplexity int) int
+		Match             func(childComplexity int, matchID int64) int
+		MatchStrokes      func(childComplexity int, matchID int64) int
+		MatchesForAccount func(childComplexity int, accountID int64) int
 	}
 }
 
@@ -91,18 +112,28 @@ type CourseResolver interface {
 type LocationResolver interface {
 	Courses(ctx context.Context, obj *db.Location) ([]*db.Course, error)
 }
+type MatchResolver interface {
+	Course(ctx context.Context, obj *db.Match) (*db.Course, error)
+	Participants(ctx context.Context, obj *db.Match) ([]*db.Account, error)
+	Strokes(ctx context.Context, obj *db.Match) ([]*db.MatchStroke, error)
+}
 type MutationResolver interface {
 	CreateAccount(ctx context.Context, nickname string, email string) (*db.Account, error)
-	CreateLocation(ctx context.Context, name string, courses []*CourseInputs) (*db.Location, error)
+	CreateLocation(ctx context.Context, name string, courses []*CourseInputs) (int64, error)
+	CreateMatch(ctx context.Context, newMatch *NewMatch) (int64, error)
+	PushStrokes(ctx context.Context, id int64, strokes int32) (int64, error)
 }
 type QueryResolver interface {
-	Account(ctx context.Context, id int64) (*db.Account, error)
-	Location(ctx context.Context, id int64) (*db.Location, error)
+	Account(ctx context.Context, accountID int64) (*db.Account, error)
+	Location(ctx context.Context, locationID int64) (*db.Location, error)
 	Locations(ctx context.Context) ([]*db.Location, error)
-	CoursesAtLocation(ctx context.Context, id int64) ([]*db.Course, error)
-	HolesAtCourse(ctx context.Context, id int64) ([]*db.Hole, error)
-	Course(ctx context.Context, id int64) (*db.Course, error)
-	Hole(ctx context.Context, id int64) (*db.Hole, error)
+	CoursesAtLocation(ctx context.Context, locationID int64) ([]*db.Course, error)
+	HolesAtCourse(ctx context.Context, courseID int64) ([]*db.Hole, error)
+	Course(ctx context.Context, courseID int64) (*db.Course, error)
+	Hole(ctx context.Context, holeID int64) (*db.Hole, error)
+	Match(ctx context.Context, matchID int64) (*db.Match, error)
+	MatchesForAccount(ctx context.Context, accountID int64) ([]*db.Match, error)
+	MatchStrokes(ctx context.Context, matchID int64) ([]*db.MatchStroke, error)
 }
 
 type executableSchema struct {
@@ -204,6 +235,69 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Location.Name(childComplexity), true
 
+	case "Match.course":
+		if e.complexity.Match.Course == nil {
+			break
+		}
+
+		return e.complexity.Match.Course(childComplexity), true
+
+	case "Match.id":
+		if e.complexity.Match.Id == nil {
+			break
+		}
+
+		return e.complexity.Match.Id(childComplexity), true
+
+	case "Match.participants":
+		if e.complexity.Match.Participants == nil {
+			break
+		}
+
+		return e.complexity.Match.Participants(childComplexity), true
+
+	case "Match.strokes":
+		if e.complexity.Match.Strokes == nil {
+			break
+		}
+
+		return e.complexity.Match.Strokes(childComplexity), true
+
+	case "MatchStroke.account":
+		if e.complexity.MatchStroke.Account == nil {
+			break
+		}
+
+		return e.complexity.MatchStroke.Account(childComplexity), true
+
+	case "MatchStroke.hole":
+		if e.complexity.MatchStroke.Hole == nil {
+			break
+		}
+
+		return e.complexity.MatchStroke.Hole(childComplexity), true
+
+	case "MatchStroke.id":
+		if e.complexity.MatchStroke.Id == nil {
+			break
+		}
+
+		return e.complexity.MatchStroke.Id(childComplexity), true
+
+	case "MatchStroke.match":
+		if e.complexity.MatchStroke.Match == nil {
+			break
+		}
+
+		return e.complexity.MatchStroke.Match(childComplexity), true
+
+	case "MatchStroke.strokes":
+		if e.complexity.MatchStroke.Strokes == nil {
+			break
+		}
+
+		return e.complexity.MatchStroke.Strokes(childComplexity), true
+
 	case "Mutation.createAccount":
 		if e.complexity.Mutation.CreateAccount == nil {
 			break
@@ -228,6 +322,30 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 
 		return e.complexity.Mutation.CreateLocation(childComplexity, args["name"].(string), args["courses"].([]*CourseInputs)), true
 
+	case "Mutation.createMatch":
+		if e.complexity.Mutation.CreateMatch == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_createMatch_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.CreateMatch(childComplexity, args["newMatch"].(*NewMatch)), true
+
+	case "Mutation.pushStrokes":
+		if e.complexity.Mutation.PushStrokes == nil {
+			break
+		}
+
+		args, err := ec.field_Mutation_pushStrokes_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Mutation.PushStrokes(childComplexity, args["id"].(int64), args["strokes"].(int32)), true
+
 	case "Query.account":
 		if e.complexity.Query.Account == nil {
 			break
@@ -238,7 +356,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Account(childComplexity, args["id"].(int64)), true
+		return e.complexity.Query.Account(childComplexity, args["account_id"].(int64)), true
 
 	case "Query.course":
 		if e.complexity.Query.Course == nil {
@@ -250,7 +368,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Course(childComplexity, args["id"].(int64)), true
+		return e.complexity.Query.Course(childComplexity, args["course_id"].(int64)), true
 
 	case "Query.coursesAtLocation":
 		if e.complexity.Query.CoursesAtLocation == nil {
@@ -262,7 +380,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.CoursesAtLocation(childComplexity, args["id"].(int64)), true
+		return e.complexity.Query.CoursesAtLocation(childComplexity, args["location_id"].(int64)), true
 
 	case "Query.hole":
 		if e.complexity.Query.Hole == nil {
@@ -274,7 +392,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Hole(childComplexity, args["id"].(int64)), true
+		return e.complexity.Query.Hole(childComplexity, args["hole_id"].(int64)), true
 
 	case "Query.holesAtCourse":
 		if e.complexity.Query.HolesAtCourse == nil {
@@ -286,7 +404,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.HolesAtCourse(childComplexity, args["id"].(int64)), true
+		return e.complexity.Query.HolesAtCourse(childComplexity, args["course_id"].(int64)), true
 
 	case "Query.location":
 		if e.complexity.Query.Location == nil {
@@ -298,7 +416,7 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 			return 0, false
 		}
 
-		return e.complexity.Query.Location(childComplexity, args["id"].(int64)), true
+		return e.complexity.Query.Location(childComplexity, args["location_id"].(int64)), true
 
 	case "Query.locations":
 		if e.complexity.Query.Locations == nil {
@@ -306,6 +424,42 @@ func (e *executableSchema) Complexity(typeName, field string, childComplexity in
 		}
 
 		return e.complexity.Query.Locations(childComplexity), true
+
+	case "Query.match":
+		if e.complexity.Query.Match == nil {
+			break
+		}
+
+		args, err := ec.field_Query_match_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.Match(childComplexity, args["match_id"].(int64)), true
+
+	case "Query.matchStrokes":
+		if e.complexity.Query.MatchStrokes == nil {
+			break
+		}
+
+		args, err := ec.field_Query_matchStrokes_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MatchStrokes(childComplexity, args["match_id"].(int64)), true
+
+	case "Query.matchesForAccount":
+		if e.complexity.Query.MatchesForAccount == nil {
+			break
+		}
+
+		args, err := ec.field_Query_matchesForAccount_args(context.TODO(), rawArgs)
+		if err != nil {
+			return 0, false
+		}
+
+		return e.complexity.Query.MatchesForAccount(childComplexity, args["account_id"].(int64)), true
 
 	}
 	return 0, false
@@ -405,27 +559,53 @@ input HoleInputs {
     par: Int!
 }
 `, BuiltIn: false},
+	{Name: "../schemas/matches.graphql", Input: `type Match {
+    id: ID!
+    course: Course!
+    participants: [Account!]!
+    strokes: [MatchStroke!]!
+}
+
+type MatchStroke {
+    id: ID!
+    account: Account!
+    match: Match!
+    hole: Hole!
+    strokes: Int!
+}
+
+input NewMatch {
+    course_id: ID!
+    participant_ids: [ID!]!
+    hole_ids: [ID!]!
+}
+`, BuiltIn: false},
 	{Name: "../schemas/mutations.graphql", Input: `type Mutation {
     createAccount(nickname: String!, email: String!): Account!
-    createLocation(name: String!, courses: [CourseInputs]): Location!
+    createLocation(name: String!, courses: [CourseInputs]): ID!
+    createMatch(newMatch: NewMatch): ID!
+    pushStrokes(id: ID!, strokes: Int!): ID!
 }
 `, BuiltIn: false},
 	{Name: "../schemas/queries.graphql", Input: `type Query {
     # accounts
-    account(id: ID!): Account
+    account(account_id: ID!): Account
 
     # locations
-    location(id: ID!): Location
+    location(location_id: ID!): Location
     locations: [Location!]!
 
     # slightly more efficient requests if you already know the parent ID
-    coursesAtLocation(id: ID!): [Course]
-    holesAtCourse(id: ID!): [Hole]
+    coursesAtLocation(location_id: ID!): [Course]
+    holesAtCourse(course_id: ID!): [Hole]
 
-    course(id: ID!): Course
-    hole(id: ID!): Hole
+    course(course_id: ID!): Course
+    hole(hole_id: ID!): Hole
 
     # matches
+    match(match_id: ID!): Match
+    matchesForAccount(account_id: ID!): [Match!]
+    matchStrokes(match_id: ID!): [MatchStroke!]!
 }
 `, BuiltIn: false},
 }
@@ -483,6 +663,45 @@ func (ec *executionContext) field_Mutation_createLocation_args(ctx context.Conte
 	return args, nil
 }
 
+func (ec *executionContext) field_Mutation_createMatch_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 *NewMatch
+	if tmp, ok := rawArgs["newMatch"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("newMatch"))
+		arg0, err = ec.unmarshalONewMatch2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚐNewMatch(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["newMatch"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Mutation_pushStrokes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["id"] = arg0
+	var arg1 int32
+	if tmp, ok := rawArgs["strokes"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("strokes"))
+		arg1, err = ec.unmarshalNInt2int32(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["strokes"] = arg1
+	return args, nil
+}
+
 func (ec *executionContext) field_Query___type_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
 	var err error
 	args := map[string]interface{}{}
@@ -502,14 +721,14 @@ func (ec *executionContext) field_Query_account_args(ctx context.Context, rawArg
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["account_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("account_id"))
 		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["account_id"] = arg0
 	return args, nil
 }
 
@@ -517,14 +736,14 @@ func (ec *executionContext) field_Query_course_args(ctx context.Context, rawArgs
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["course_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("course_id"))
 		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["course_id"] = arg0
 	return args, nil
 }
 
@@ -532,14 +751,14 @@ func (ec *executionContext) field_Query_coursesAtLocation_args(ctx context.Conte
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["location_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location_id"))
 		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["location_id"] = arg0
 	return args, nil
 }
 
@@ -547,14 +766,14 @@ func (ec *executionContext) field_Query_hole_args(ctx context.Context, rawArgs m
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["hole_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hole_id"))
 		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["hole_id"] = arg0
 	return args, nil
 }
 
@@ -562,14 +781,14 @@ func (ec *executionContext) field_Query_holesAtCourse_args(ctx context.Context, 
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["course_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("course_id"))
 		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["course_id"] = arg0
 	return args, nil
 }
 
@@ -577,14 +796,59 @@ func (ec *executionContext) field_Query_location_args(ctx context.Context, rawAr
 	var err error
 	args := map[string]interface{}{}
 	var arg0 int64
-	if tmp, ok := rawArgs["id"]; ok {
-		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("id"))
+	if tmp, ok := rawArgs["location_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("location_id"))
 		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
 		if err != nil {
 			return nil, err
 		}
 	}
-	args["id"] = arg0
+	args["location_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_matchStrokes_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["match_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("match_id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["match_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_match_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["match_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("match_id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["match_id"] = arg0
+	return args, nil
+}
+
+func (ec *executionContext) field_Query_matchesForAccount_args(ctx context.Context, rawArgs map[string]interface{}) (map[string]interface{}, error) {
+	var err error
+	args := map[string]interface{}{}
+	var arg0 int64
+	if tmp, ok := rawArgs["account_id"]; ok {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("account_id"))
+		arg0, err = ec.unmarshalNID2int64(ctx, tmp)
+		if err != nil {
+			return nil, err
+		}
+	}
+	args["account_id"] = arg0
 	return args, nil
 }
 
@@ -1040,6 +1304,321 @@ func (ec *executionContext) _Location_courses(ctx context.Context, field graphql
 	return ec.marshalOCourse2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐCourse(ctx, field.Selections, res)
 }
 
+func (ec *executionContext) _Match_id(ctx context.Context, field graphql.CollectedField, obj *db.Match) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Match",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Id, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Match_course(ctx context.Context, field graphql.CollectedField, obj *db.Match) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Match",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Match().Course(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Course)
+	fc.Result = res
+	return ec.marshalNCourse2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐCourse(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Match_participants(ctx context.Context, field graphql.CollectedField, obj *db.Match) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Match",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Match().Participants(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*db.Account)
+	fc.Result = res
+	return ec.marshalNAccount2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐAccountᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Match_strokes(ctx context.Context, field graphql.CollectedField, obj *db.Match) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Match",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Match().Strokes(rctx, obj)
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*db.MatchStroke)
+	fc.Result = res
+	return ec.marshalNMatchStroke2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatchStrokeᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MatchStroke_id(ctx context.Context, field graphql.CollectedField, obj *db.MatchStroke) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MatchStroke",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Id, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MatchStroke_account(ctx context.Context, field graphql.CollectedField, obj *db.MatchStroke) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MatchStroke",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Account, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Account)
+	fc.Result = res
+	return ec.marshalNAccount2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐAccount(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MatchStroke_match(ctx context.Context, field graphql.CollectedField, obj *db.MatchStroke) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MatchStroke",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Match, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Match)
+	fc.Result = res
+	return ec.marshalNMatch2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatch(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MatchStroke_hole(ctx context.Context, field graphql.CollectedField, obj *db.MatchStroke) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MatchStroke",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Hole, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(*db.Hole)
+	fc.Result = res
+	return ec.marshalNHole2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐHole(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _MatchStroke_strokes(ctx context.Context, field graphql.CollectedField, obj *db.MatchStroke) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "MatchStroke",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   false,
+		IsResolver: false,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return obj.Strokes, nil
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNInt2int64(ctx, field.Selections, res)
+}
+
 func (ec *executionContext) _Mutation_createAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
 	defer func() {
 		if r := recover(); r != nil {
@@ -1119,9 +1698,93 @@ func (ec *executionContext) _Mutation_createLocation(ctx context.Context, field 
 		}
 		return graphql.Null
 	}
-	res := resTmp.(*db.Location)
+	res := resTmp.(int64)
 	fc.Result = res
-	return ec.marshalNLocation2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocation(ctx, field.Selections, res)
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_createMatch(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_createMatch_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().CreateMatch(rctx, args["newMatch"].(*NewMatch))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Mutation_pushStrokes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Mutation",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Mutation_pushStrokes_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Mutation().PushStrokes(rctx, args["id"].(int64), args["strokes"].(int32))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.(int64)
+	fc.Result = res
+	return ec.marshalNID2int64(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query_account(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -1149,7 +1812,7 @@ func (ec *executionContext) _Query_account(ctx context.Context, field graphql.Co
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Account(rctx, args["id"].(int64))
+		return ec.resolvers.Query().Account(rctx, args["account_id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1188,7 +1851,7 @@ func (ec *executionContext) _Query_location(ctx context.Context, field graphql.C
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Location(rctx, args["id"].(int64))
+		return ec.resolvers.Query().Location(rctx, args["location_id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1262,7 +1925,7 @@ func (ec *executionContext) _Query_coursesAtLocation(ctx context.Context, field 
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().CoursesAtLocation(rctx, args["id"].(int64))
+		return ec.resolvers.Query().CoursesAtLocation(rctx, args["location_id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1301,7 +1964,7 @@ func (ec *executionContext) _Query_holesAtCourse(ctx context.Context, field grap
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().HolesAtCourse(rctx, args["id"].(int64))
+		return ec.resolvers.Query().HolesAtCourse(rctx, args["course_id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1340,7 +2003,7 @@ func (ec *executionContext) _Query_course(ctx context.Context, field graphql.Col
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Course(rctx, args["id"].(int64))
+		return ec.resolvers.Query().Course(rctx, args["course_id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1379,7 +2042,7 @@ func (ec *executionContext) _Query_hole(ctx context.Context, field graphql.Colle
 	fc.Args = args
 	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
 		ctx = rctx // use context from middleware stack in children
-		return ec.resolvers.Query().Hole(rctx, args["id"].(int64))
+		return ec.resolvers.Query().Hole(rctx, args["hole_id"].(int64))
 	})
 	if err != nil {
 		ec.Error(ctx, err)
@@ -1391,6 +2054,126 @@ func (ec *executionContext) _Query_hole(ctx context.Context, field graphql.Colle
 	res := resTmp.(*db.Hole)
 	fc.Result = res
 	return ec.marshalOHole2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐHole(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_match(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_match_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().Match(rctx, args["match_id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.(*db.Match)
+	fc.Result = res
+	return ec.marshalOMatch2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatch(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_matchesForAccount(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_matchesForAccount_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MatchesForAccount(rctx, args["account_id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		return graphql.Null
+	}
+	res := resTmp.([]*db.Match)
+	fc.Result = res
+	return ec.marshalOMatch2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatchᚄ(ctx, field.Selections, res)
+}
+
+func (ec *executionContext) _Query_matchStrokes(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
+	defer func() {
+		if r := recover(); r != nil {
+			ec.Error(ctx, ec.Recover(ctx, r))
+			ret = graphql.Null
+		}
+	}()
+	fc := &graphql.FieldContext{
+		Object:     "Query",
+		Field:      field,
+		Args:       nil,
+		IsMethod:   true,
+		IsResolver: true,
+	}
+
+	ctx = graphql.WithFieldContext(ctx, fc)
+	rawArgs := field.ArgumentMap(ec.Variables)
+	args, err := ec.field_Query_matchStrokes_args(ctx, rawArgs)
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	fc.Args = args
+	resTmp, err := ec.ResolverMiddleware(ctx, func(rctx context.Context) (interface{}, error) {
+		ctx = rctx // use context from middleware stack in children
+		return ec.resolvers.Query().MatchStrokes(rctx, args["match_id"].(int64))
+	})
+	if err != nil {
+		ec.Error(ctx, err)
+		return graphql.Null
+	}
+	if resTmp == nil {
+		if !graphql.HasFieldError(ctx, fc) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	res := resTmp.([]*db.MatchStroke)
+	fc.Result = res
+	return ec.marshalNMatchStroke2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatchStrokeᚄ(ctx, field.Selections, res)
 }
 
 func (ec *executionContext) _Query___type(ctx context.Context, field graphql.CollectedField) (ret graphql.Marshaler) {
@@ -2648,6 +3431,45 @@ func (ec *executionContext) unmarshalInputHoleInputs(ctx context.Context, obj in
 	return it, nil
 }
 
+func (ec *executionContext) unmarshalInputNewMatch(ctx context.Context, obj interface{}) (NewMatch, error) {
+	var it NewMatch
+	asMap := map[string]interface{}{}
+	for k, v := range obj.(map[string]interface{}) {
+		asMap[k] = v
+	}
+
+	for k, v := range asMap {
+		switch k {
+		case "course_id":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("course_id"))
+			it.CourseID, err = ec.unmarshalNID2int64(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "participant_ids":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("participant_ids"))
+			it.ParticipantIds, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		case "hole_ids":
+			var err error
+
+			ctx := graphql.WithPathContext(ctx, graphql.NewPathWithField("hole_ids"))
+			it.HoleIds, err = ec.unmarshalNID2ᚕint64ᚄ(ctx, v)
+			if err != nil {
+				return it, err
+			}
+		}
+	}
+
+	return it, nil
+}
+
 // endregion **************************** input.gotpl *****************************
 
 // region    ************************** interface.gotpl ***************************
@@ -2816,6 +3638,122 @@ func (ec *executionContext) _Location(ctx context.Context, sel ast.SelectionSet,
 	return out
 }
 
+var matchImplementors = []string{"Match"}
+
+func (ec *executionContext) _Match(ctx context.Context, sel ast.SelectionSet, obj *db.Match) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, matchImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("Match")
+		case "id":
+			out.Values[i] = ec._Match_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				atomic.AddUint32(&invalids, 1)
+			}
+		case "course":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Match_course(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "participants":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Match_participants(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		case "strokes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Match_strokes(ctx, field, obj)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
+				return res
+			})
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
+var matchStrokeImplementors = []string{"MatchStroke"}
+
+func (ec *executionContext) _MatchStroke(ctx context.Context, sel ast.SelectionSet, obj *db.MatchStroke) graphql.Marshaler {
+	fields := graphql.CollectFields(ec.OperationContext, sel, matchStrokeImplementors)
+
+	out := graphql.NewFieldSet(fields)
+	var invalids uint32
+	for i, field := range fields {
+		switch field.Name {
+		case "__typename":
+			out.Values[i] = graphql.MarshalString("MatchStroke")
+		case "id":
+			out.Values[i] = ec._MatchStroke_id(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "account":
+			out.Values[i] = ec._MatchStroke_account(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "match":
+			out.Values[i] = ec._MatchStroke_match(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "hole":
+			out.Values[i] = ec._MatchStroke_hole(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "strokes":
+			out.Values[i] = ec._MatchStroke_strokes(ctx, field, obj)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		default:
+			panic("unknown field " + strconv.Quote(field.Name))
+		}
+	}
+	out.Dispatch()
+	if invalids > 0 {
+		return graphql.Null
+	}
+	return out
+}
+
 var mutationImplementors = []string{"Mutation"}
 
 func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet) graphql.Marshaler {
@@ -2838,6 +3776,16 @@ func (ec *executionContext) _Mutation(ctx context.Context, sel ast.SelectionSet)
 			}
 		case "createLocation":
 			out.Values[i] = ec._Mutation_createLocation(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "createMatch":
+			out.Values[i] = ec._Mutation_createMatch(ctx, field)
+			if out.Values[i] == graphql.Null {
+				invalids++
+			}
+		case "pushStrokes":
+			out.Values[i] = ec._Mutation_pushStrokes(ctx, field)
 			if out.Values[i] == graphql.Null {
 				invalids++
 			}
@@ -2945,6 +3893,42 @@ func (ec *executionContext) _Query(ctx context.Context, sel ast.SelectionSet) gr
 					}
 				}()
 				res = ec._Query_hole(ctx, field)
+				return res
+			})
+		case "match":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_match(ctx, field)
+				return res
+			})
+		case "matchesForAccount":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_matchesForAccount(ctx, field)
+				return res
+			})
+		case "matchStrokes":
+			field := field
+			out.Concurrently(i, func() (res graphql.Marshaler) {
+				defer func() {
+					if r := recover(); r != nil {
+						ec.Error(ctx, ec.Recover(ctx, r))
+					}
+				}()
+				res = ec._Query_matchStrokes(ctx, field)
+				if res == graphql.Null {
+					atomic.AddUint32(&invalids, 1)
+				}
 				return res
 			})
 		case "__type":
@@ -3216,6 +4200,50 @@ func (ec *executionContext) marshalNAccount2githubᚗcomᚋtreedefenseᚋproject
 	return ec._Account(ctx, sel, &v)
 }
 
+func (ec *executionContext) marshalNAccount2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐAccountᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.Account) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNAccount2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐAccount(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) marshalNAccount2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐAccount(ctx context.Context, sel ast.SelectionSet, v *db.Account) graphql.Marshaler {
 	if v == nil {
 		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
@@ -3239,6 +4267,30 @@ func (ec *executionContext) marshalNBoolean2bool(ctx context.Context, sel ast.Se
 		}
 	}
 	return res
+}
+
+func (ec *executionContext) marshalNCourse2githubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐCourse(ctx context.Context, sel ast.SelectionSet, v db.Course) graphql.Marshaler {
+	return ec._Course(ctx, sel, &v)
+}
+
+func (ec *executionContext) marshalNCourse2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐCourse(ctx context.Context, sel ast.SelectionSet, v *db.Course) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Course(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNHole2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐHole(ctx context.Context, sel ast.SelectionSet, v *db.Hole) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Hole(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNHoleInputs2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚐHoleInputsᚄ(ctx context.Context, v interface{}) ([]*HoleInputs, error) {
@@ -3282,6 +4334,42 @@ func (ec *executionContext) marshalNID2int64(ctx context.Context, sel ast.Select
 	return res
 }
 
+func (ec *executionContext) unmarshalNID2ᚕint64ᚄ(ctx context.Context, v interface{}) ([]int64, error) {
+	var vSlice []interface{}
+	if v != nil {
+		if tmp1, ok := v.([]interface{}); ok {
+			vSlice = tmp1
+		} else {
+			vSlice = []interface{}{v}
+		}
+	}
+	var err error
+	res := make([]int64, len(vSlice))
+	for i := range vSlice {
+		ctx := graphql.WithPathContext(ctx, graphql.NewPathWithIndex(i))
+		res[i], err = ec.unmarshalNID2int64(ctx, vSlice[i])
+		if err != nil {
+			return nil, err
+		}
+	}
+	return res, nil
+}
+
+func (ec *executionContext) marshalNID2ᚕint64ᚄ(ctx context.Context, sel ast.SelectionSet, v []int64) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	for i := range v {
+		ret[i] = ec.marshalNID2int64(ctx, sel, v[i])
+	}
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
 func (ec *executionContext) unmarshalNInt2int32(ctx context.Context, v interface{}) (int32, error) {
 	res, err := graphql.UnmarshalInt32(v)
 	return res, graphql.ErrorOnPath(ctx, err)
@@ -3310,10 +4398,6 @@ func (ec *executionContext) marshalNInt2int64(ctx context.Context, sel ast.Selec
 		}
 	}
 	return res
-}
-
-func (ec *executionContext) marshalNLocation2githubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocation(ctx context.Context, sel ast.SelectionSet, v db.Location) graphql.Marshaler {
-	return ec._Location(ctx, sel, &v)
 }
 
 func (ec *executionContext) marshalNLocation2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐLocationᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.Location) graphql.Marshaler {
@@ -3368,6 +4452,70 @@ func (ec *executionContext) marshalNLocation2ᚖgithubᚗcomᚋtreedefenseᚋpro
 		return graphql.Null
 	}
 	return ec._Location(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMatch2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatch(ctx context.Context, sel ast.SelectionSet, v *db.Match) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._Match(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalNMatchStroke2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatchStrokeᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.MatchStroke) graphql.Marshaler {
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMatchStroke2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatchStroke(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalNMatchStroke2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatchStroke(ctx context.Context, sel ast.SelectionSet, v *db.MatchStroke) graphql.Marshaler {
+	if v == nil {
+		if !graphql.HasFieldError(ctx, graphql.GetFieldContext(ctx)) {
+			ec.Errorf(ctx, "must not be null")
+		}
+		return graphql.Null
+	}
+	return ec._MatchStroke(ctx, sel, v)
 }
 
 func (ec *executionContext) unmarshalNString2string(ctx context.Context, v interface{}) (string, error) {
@@ -3806,6 +4954,68 @@ func (ec *executionContext) marshalOLocation2ᚖgithubᚗcomᚋtreedefenseᚋpro
 		return graphql.Null
 	}
 	return ec._Location(ctx, sel, v)
+}
+
+func (ec *executionContext) marshalOMatch2ᚕᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatchᚄ(ctx context.Context, sel ast.SelectionSet, v []*db.Match) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	ret := make(graphql.Array, len(v))
+	var wg sync.WaitGroup
+	isLen1 := len(v) == 1
+	if !isLen1 {
+		wg.Add(len(v))
+	}
+	for i := range v {
+		i := i
+		fc := &graphql.FieldContext{
+			Index:  &i,
+			Result: &v[i],
+		}
+		ctx := graphql.WithFieldContext(ctx, fc)
+		f := func(i int) {
+			defer func() {
+				if r := recover(); r != nil {
+					ec.Error(ctx, ec.Recover(ctx, r))
+					ret = nil
+				}
+			}()
+			if !isLen1 {
+				defer wg.Done()
+			}
+			ret[i] = ec.marshalNMatch2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatch(ctx, sel, v[i])
+		}
+		if isLen1 {
+			f(i)
+		} else {
+			go f(i)
+		}
+
+	}
+	wg.Wait()
+
+	for _, e := range ret {
+		if e == graphql.Null {
+			return graphql.Null
+		}
+	}
+
+	return ret
+}
+
+func (ec *executionContext) marshalOMatch2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋdbᚐMatch(ctx context.Context, sel ast.SelectionSet, v *db.Match) graphql.Marshaler {
+	if v == nil {
+		return graphql.Null
+	}
+	return ec._Match(ctx, sel, v)
+}
+
+func (ec *executionContext) unmarshalONewMatch2ᚖgithubᚗcomᚋtreedefenseᚋprojectchipᚋgraphᚐNewMatch(ctx context.Context, v interface{}) (*NewMatch, error) {
+	if v == nil {
+		return nil, nil
+	}
+	res, err := ec.unmarshalInputNewMatch(ctx, v)
+	return &res, graphql.ErrorOnPath(ctx, err)
 }
 
 func (ec *executionContext) unmarshalOString2string(ctx context.Context, v interface{}) (string, error) {

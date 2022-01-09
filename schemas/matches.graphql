@@ -1,0 +1,20 @@
+type Match {
+    id: ID!
+    course: Course!
+    participants: [Account!]!
+    strokes: [MatchStroke!]!
+}
+
+type MatchStroke {
+    id: ID!
+    account: Account!
+    match: Match!
+    hole: Hole!
+    strokes: Int!
+}
+
+input NewMatch {
+    course_id: ID!
+    participant_ids: [ID!]!
+    hole_ids: [ID!]!
+}

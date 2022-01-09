@@ -6,13 +6,12 @@ package resolvers
 import (
 	"context"
 
-	"github.com/opendoor/pggen/include"
 	"github.com/treedefense/projectchip/db"
 	"github.com/treedefense/projectchip/graph"
 )
 
 func (r *courseResolver) Holes(ctx context.Context, obj *db.Course) ([]*db.Hole, error) {
-	err := r.Db.CourseFillIncludes(ctx, obj, include.Must(include.Parse("courses.holes")))
+	err := r.Db.CourseFillIncludes(ctx, obj, db.CourseAllIncludes)
 	if err != nil {
 		return nil, err
 	}
@@ -20,7 +19,7 @@ func (r *courseResolver) Holes(ctx context.Context, obj *db.Course) ([]*db.Hole,
 }
 
 func (r *locationResolver) Courses(ctx context.Context, obj *db.Location) ([]*db.Course, error) {
-	err := r.Db.LocationFillIncludes(ctx, obj, include.Must(include.Parse("locations.courses")))
+	err := r.Db.LocationFillIncludes(ctx, obj, db.LocationAllIncludes)
 	if err != nil {
 		return nil, err
 	}

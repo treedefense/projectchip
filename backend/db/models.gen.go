@@ -47,6 +47,12 @@ type PGClient struct {
 	colIdxTabForGetCoursesAtLocationRow []int
 	rwlockForGetHolesAtCourseRow        sync.RWMutex
 	colIdxTabForGetHolesAtCourseRow     []int
+	rwlockForGetStrokesForMatchRow      sync.RWMutex
+	colIdxTabForGetStrokesForMatchRow   []int
+	rwlockForGetMatchParticipantsRow    sync.RWMutex
+	colIdxTabForGetMatchParticipantsRow []int
+	rwlockForGetMatchesForAccountRow    sync.RWMutex
+	colIdxTabForGetMatchesForAccountRow []int
 }
 
 // bogus usage so we can compile with no tables configured
@@ -5791,25 +5797,6 @@ func (p *pgClientImpl) implMatchParticipantBulkFillIncludes(
 	}
 	var subSpec *include.Spec
 	var inIncludeSet bool
-	subSpec, inIncludeSet = includes.Includes[`matches`]
-	if inIncludeSet {
-		err = p.privateMatchParticipantFillParentMatch(ctx, loadedRecordTab)
-		if err != nil {
-			return p.client.errorConverter(err)
-		}
-
-		subRecs := make([]*Match, 0, len(recs))
-		for _, outer := range recs {
-			if outer.Match != nil {
-				subRecs = append(subRecs, outer.Match)
-			}
-		}
-
-		err = p.implMatchBulkFillIncludes(ctx, subRecs, subSpec, loadedRecordTab)
-		if err != nil {
-			return p.client.errorConverter(err)
-		}
-	}
 	subSpec, inIncludeSet = includes.Includes[`accounts`]
 	if inIncludeSet {
 		err = p.privateMatchParticipantFillParentAccount(ctx, loadedRecordTab)
@@ -5829,92 +5816,27 @@ func (p *pgClientImpl) implMatchParticipantBulkFillIncludes(
 			return p.client.errorConverter(err)
 		}
 	}
-
-	return
-}
-
-// For a given set of MatchParticipant, fill in all the Match
-// connected to them using at most one query.
-func (p *pgClientImpl) privateMatchParticipantFillParentMatch(
-	ctx context.Context,
-	loadedRecordTab map[string]interface{},
-) error {
-	// lookup the table of child records
-	childLoadedTab, inMap := loadedRecordTab[`match_participants`]
-	if !inMap {
-		return p.client.errorConverter(fmt.Errorf("internal pggen error: table not pre-loaded"))
-	}
-	childIDToRecord := childLoadedTab.(map[int64]*MatchParticipant)
-
-	// lookup the table of parent records
-	var parentIDToRecord map[int64]*Match
-	parentLoadedTab, inMap := loadedRecordTab[`matches`]
-	if inMap {
-		parentIDToRecord = parentLoadedTab.(map[int64]*Match)
-	} else {
-		parentIDToRecord = map[int64]*Match{}
-	}
-
-	// partition the parents into those records which we have already loaded and those
-	// which still need to be fetched from the db.
-	ids := make([]int64, 0, len(childIDToRecord))
-	for _, rec := range childIDToRecord {
-		parentID := rec.MatchId
-
-		parentRec, inMap := parentIDToRecord[parentID]
-		if inMap {
-			// already loaded, no need to hit the DB
-			rec.Match = parentRec
-		} else {
-			ids = append(ids, parentID)
-		}
-	}
-
-	// build a table mapping parent ids to lists of children which hold references to them
-	parentIDToChildren := map[int64][]*MatchParticipant{}
-	for _, rec := range childIDToRecord {
-		parentID := rec.MatchId
-
-		childSlice, inMap := parentIDToChildren[parentID]
-		if inMap {
-			childSlice = append(childSlice, rec)
-			parentIDToChildren[parentID] = childSlice
-		} else {
-			parentIDToChildren[parentID] = []*MatchParticipant{rec}
-		}
-	}
-
-	// fetch any outstanding parent records
-	if len(ids) > 0 {
-		rows, err := p.queryContext(
-			ctx,
-			`SELECT * FROM matches
-			WHERE id = ANY($1)`,
-			pgtypes.Array(ids),
-		)
+	subSpec, inIncludeSet = includes.Includes[`matches`]
+	if inIncludeSet {
+		err = p.privateMatchParticipantFillParentMatch(ctx, loadedRecordTab)
 		if err != nil {
 			return p.client.errorConverter(err)
 		}
-		defer rows.Close()
 
-		for rows.Next() {
-			var parentRec Match
-			err = parentRec.Scan(ctx, p.client, rows)
-			if err != nil {
-				return p.client.errorConverter(fmt.Errorf("scanning parent record: %s", err.Error()))
+		subRecs := make([]*Match, 0, len(recs))
+		for _, outer := range recs {
+			if outer.Match != nil {
+				subRecs = append(subRecs, outer.Match)
 			}
+		}
 
-			childRecs := parentIDToChildren[parentRec.Id]
-			for _, childRec := range childRecs {
-				childRec.Match = &parentRec
-			}
-			parentIDToRecord[parentRec.Id] = &parentRec
+		err = p.implMatchBulkFillIncludes(ctx, subRecs, subSpec, loadedRecordTab)
+		if err != nil {
+			return p.client.errorConverter(err)
 		}
 	}
 
-	loadedRecordTab[`matches`] = parentIDToRecord
-
-	return nil
+	return
 }
 
 // For a given set of MatchParticipant, fill in all the Account
@@ -5997,6 +5919,90 @@ func (p *pgClientImpl) privateMatchParticipantFillParentAccount(
 	}
 
 	loadedRecordTab[`accounts`] = parentIDToRecord
+
+	return nil
+}
+
+// For a given set of MatchParticipant, fill in all the Match
+// connected to them using at most one query.
+func (p *pgClientImpl) privateMatchParticipantFillParentMatch(
+	ctx context.Context,
+	loadedRecordTab map[string]interface{},
+) error {
+	// lookup the table of child records
+	childLoadedTab, inMap := loadedRecordTab[`match_participants`]
+	if !inMap {
+		return p.client.errorConverter(fmt.Errorf("internal pggen error: table not pre-loaded"))
+	}
+	childIDToRecord := childLoadedTab.(map[int64]*MatchParticipant)
+
+	// lookup the table of parent records
+	var parentIDToRecord map[int64]*Match
+	parentLoadedTab, inMap := loadedRecordTab[`matches`]
+	if inMap {
+		parentIDToRecord = parentLoadedTab.(map[int64]*Match)
+	} else {
+		parentIDToRecord = map[int64]*Match{}
+	}
+
+	// partition the parents into those records which we have already loaded and those
+	// which still need to be fetched from the db.
+	ids := make([]int64, 0, len(childIDToRecord))
+	for _, rec := range childIDToRecord {
+		parentID := rec.MatchId
+
+		parentRec, inMap := parentIDToRecord[parentID]
+		if inMap {
+			// already loaded, no need to hit the DB
+			rec.Match = parentRec
+		} else {
+			ids = append(ids, parentID)
+		}
+	}
+
+	// build a table mapping parent ids to lists of children which hold references to them
+	parentIDToChildren := map[int64][]*MatchParticipant{}
+	for _, rec := range childIDToRecord {
+		parentID := rec.MatchId
+
+		childSlice, inMap := parentIDToChildren[parentID]
+		if inMap {
+			childSlice = append(childSlice, rec)
+			parentIDToChildren[parentID] = childSlice
+		} else {
+			parentIDToChildren[parentID] = []*MatchParticipant{rec}
+		}
+	}
+
+	// fetch any outstanding parent records
+	if len(ids) > 0 {
+		rows, err := p.queryContext(
+			ctx,
+			`SELECT * FROM matches
+			WHERE id = ANY($1)`,
+			pgtypes.Array(ids),
+		)
+		if err != nil {
+			return p.client.errorConverter(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var parentRec Match
+			err = parentRec.Scan(ctx, p.client, rows)
+			if err != nil {
+				return p.client.errorConverter(fmt.Errorf("scanning parent record: %s", err.Error()))
+			}
+
+			childRecs := parentIDToChildren[parentRec.Id]
+			for _, childRec := range childRecs {
+				childRec.Match = &parentRec
+			}
+			parentIDToRecord[parentRec.Id] = &parentRec
+		}
+	}
+
+	loadedRecordTab[`matches`] = parentIDToRecord
 
 	return nil
 }
@@ -6819,6 +6825,25 @@ func (p *pgClientImpl) implMatchStrokeBulkFillIncludes(
 	}
 	var subSpec *include.Spec
 	var inIncludeSet bool
+	subSpec, inIncludeSet = includes.Includes[`accounts`]
+	if inIncludeSet {
+		err = p.privateMatchStrokeFillParentAccount(ctx, loadedRecordTab)
+		if err != nil {
+			return p.client.errorConverter(err)
+		}
+
+		subRecs := make([]*Account, 0, len(recs))
+		for _, outer := range recs {
+			if outer.Account != nil {
+				subRecs = append(subRecs, outer.Account)
+			}
+		}
+
+		err = p.implAccountBulkFillIncludes(ctx, subRecs, subSpec, loadedRecordTab)
+		if err != nil {
+			return p.client.errorConverter(err)
+		}
+	}
 	subSpec, inIncludeSet = includes.Includes[`holes`]
 	if inIncludeSet {
 		err = p.privateMatchStrokeFillParentHole(ctx, loadedRecordTab)
@@ -6857,27 +6882,92 @@ func (p *pgClientImpl) implMatchStrokeBulkFillIncludes(
 			return p.client.errorConverter(err)
 		}
 	}
-	subSpec, inIncludeSet = includes.Includes[`accounts`]
-	if inIncludeSet {
-		err = p.privateMatchStrokeFillParentAccount(ctx, loadedRecordTab)
-		if err != nil {
-			return p.client.errorConverter(err)
-		}
 
-		subRecs := make([]*Account, 0, len(recs))
-		for _, outer := range recs {
-			if outer.Account != nil {
-				subRecs = append(subRecs, outer.Account)
-			}
-		}
+	return
+}
 
-		err = p.implAccountBulkFillIncludes(ctx, subRecs, subSpec, loadedRecordTab)
-		if err != nil {
-			return p.client.errorConverter(err)
+// For a given set of MatchStroke, fill in all the Account
+// connected to them using at most one query.
+func (p *pgClientImpl) privateMatchStrokeFillParentAccount(
+	ctx context.Context,
+	loadedRecordTab map[string]interface{},
+) error {
+	// lookup the table of child records
+	childLoadedTab, inMap := loadedRecordTab[`match_strokes`]
+	if !inMap {
+		return p.client.errorConverter(fmt.Errorf("internal pggen error: table not pre-loaded"))
+	}
+	childIDToRecord := childLoadedTab.(map[int64]*MatchStroke)
+
+	// lookup the table of parent records
+	var parentIDToRecord map[int64]*Account
+	parentLoadedTab, inMap := loadedRecordTab[`accounts`]
+	if inMap {
+		parentIDToRecord = parentLoadedTab.(map[int64]*Account)
+	} else {
+		parentIDToRecord = map[int64]*Account{}
+	}
+
+	// partition the parents into those records which we have already loaded and those
+	// which still need to be fetched from the db.
+	ids := make([]int64, 0, len(childIDToRecord))
+	for _, rec := range childIDToRecord {
+		parentID := rec.AccountId
+
+		parentRec, inMap := parentIDToRecord[parentID]
+		if inMap {
+			// already loaded, no need to hit the DB
+			rec.Account = parentRec
+		} else {
+			ids = append(ids, parentID)
 		}
 	}
 
-	return
+	// build a table mapping parent ids to lists of children which hold references to them
+	parentIDToChildren := map[int64][]*MatchStroke{}
+	for _, rec := range childIDToRecord {
+		parentID := rec.AccountId
+
+		childSlice, inMap := parentIDToChildren[parentID]
+		if inMap {
+			childSlice = append(childSlice, rec)
+			parentIDToChildren[parentID] = childSlice
+		} else {
+			parentIDToChildren[parentID] = []*MatchStroke{rec}
+		}
+	}
+
+	// fetch any outstanding parent records
+	if len(ids) > 0 {
+		rows, err := p.queryContext(
+			ctx,
+			`SELECT * FROM accounts
+			WHERE id = ANY($1)`,
+			pgtypes.Array(ids),
+		)
+		if err != nil {
+			return p.client.errorConverter(err)
+		}
+		defer rows.Close()
+
+		for rows.Next() {
+			var parentRec Account
+			err = parentRec.Scan(ctx, p.client, rows)
+			if err != nil {
+				return p.client.errorConverter(fmt.Errorf("scanning parent record: %s", err.Error()))
+			}
+
+			childRecs := parentIDToChildren[parentRec.Id]
+			for _, childRec := range childRecs {
+				childRec.Account = &parentRec
+			}
+			parentIDToRecord[parentRec.Id] = &parentRec
+		}
+	}
+
+	loadedRecordTab[`accounts`] = parentIDToRecord
+
+	return nil
 }
 
 // For a given set of MatchStroke, fill in all the Hole
@@ -7044,90 +7134,6 @@ func (p *pgClientImpl) privateMatchStrokeFillParentMatch(
 	}
 
 	loadedRecordTab[`matches`] = parentIDToRecord
-
-	return nil
-}
-
-// For a given set of MatchStroke, fill in all the Account
-// connected to them using at most one query.
-func (p *pgClientImpl) privateMatchStrokeFillParentAccount(
-	ctx context.Context,
-	loadedRecordTab map[string]interface{},
-) error {
-	// lookup the table of child records
-	childLoadedTab, inMap := loadedRecordTab[`match_strokes`]
-	if !inMap {
-		return p.client.errorConverter(fmt.Errorf("internal pggen error: table not pre-loaded"))
-	}
-	childIDToRecord := childLoadedTab.(map[int64]*MatchStroke)
-
-	// lookup the table of parent records
-	var parentIDToRecord map[int64]*Account
-	parentLoadedTab, inMap := loadedRecordTab[`accounts`]
-	if inMap {
-		parentIDToRecord = parentLoadedTab.(map[int64]*Account)
-	} else {
-		parentIDToRecord = map[int64]*Account{}
-	}
-
-	// partition the parents into those records which we have already loaded and those
-	// which still need to be fetched from the db.
-	ids := make([]int64, 0, len(childIDToRecord))
-	for _, rec := range childIDToRecord {
-		parentID := rec.AccountId
-
-		parentRec, inMap := parentIDToRecord[parentID]
-		if inMap {
-			// already loaded, no need to hit the DB
-			rec.Account = parentRec
-		} else {
-			ids = append(ids, parentID)
-		}
-	}
-
-	// build a table mapping parent ids to lists of children which hold references to them
-	parentIDToChildren := map[int64][]*MatchStroke{}
-	for _, rec := range childIDToRecord {
-		parentID := rec.AccountId
-
-		childSlice, inMap := parentIDToChildren[parentID]
-		if inMap {
-			childSlice = append(childSlice, rec)
-			parentIDToChildren[parentID] = childSlice
-		} else {
-			parentIDToChildren[parentID] = []*MatchStroke{rec}
-		}
-	}
-
-	// fetch any outstanding parent records
-	if len(ids) > 0 {
-		rows, err := p.queryContext(
-			ctx,
-			`SELECT * FROM accounts
-			WHERE id = ANY($1)`,
-			pgtypes.Array(ids),
-		)
-		if err != nil {
-			return p.client.errorConverter(err)
-		}
-		defer rows.Close()
-
-		for rows.Next() {
-			var parentRec Account
-			err = parentRec.Scan(ctx, p.client, rows)
-			if err != nil {
-				return p.client.errorConverter(fmt.Errorf("scanning parent record: %s", err.Error()))
-			}
-
-			childRecs := parentIDToChildren[parentRec.Id]
-			for _, childRec := range childRecs {
-				childRec.Account = &parentRec
-			}
-			parentIDToRecord[parentRec.Id] = &parentRec
-		}
-	}
-
-	loadedRecordTab[`accounts`] = parentIDToRecord
 
 	return nil
 }
@@ -7439,6 +7445,334 @@ func (p *pgClientImpl) GetHolesAtCourseQuery(
 	)
 }
 
+func (p *PGClient) GetStrokesForMatch(
+	ctx context.Context,
+	matchId int64,
+) (ret []MatchStroke, err error) {
+	return p.impl.GetStrokesForMatch(
+		ctx,
+		matchId,
+	)
+}
+
+func (tx *TxPGClient) GetStrokesForMatch(
+	ctx context.Context,
+	matchId int64,
+) (ret []MatchStroke, err error) {
+	return tx.impl.GetStrokesForMatch(
+		ctx,
+		matchId,
+	)
+}
+
+func (conn *ConnPGClient) GetStrokesForMatch(
+	ctx context.Context,
+	matchId int64,
+) (ret []MatchStroke, err error) {
+	return conn.impl.GetStrokesForMatch(
+		ctx,
+		matchId,
+	)
+}
+func (p *pgClientImpl) GetStrokesForMatch(
+	ctx context.Context,
+	matchId int64,
+) (ret []MatchStroke, err error) {
+	ret = []MatchStroke{}
+
+	var rows *sql.Rows
+	rows, err = p.GetStrokesForMatchQuery(
+		ctx,
+		matchId,
+	)
+	if err != nil {
+		return nil, p.client.errorConverter(err)
+	}
+	defer func() {
+		if err == nil {
+			err = rows.Close()
+			if err != nil {
+				ret = nil
+				err = p.client.errorConverter(err)
+			}
+		} else {
+			rowErr := rows.Close()
+			if rowErr != nil {
+				err = p.client.errorConverter(fmt.Errorf("%s AND %s", err.Error(), rowErr.Error()))
+			}
+		}
+	}()
+
+	for rows.Next() {
+		var row MatchStroke
+		err = row.Scan(ctx, p.client, rows)
+		ret = append(ret, row)
+	}
+
+	return
+}
+
+func (p *PGClient) GetStrokesForMatchQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return p.impl.GetStrokesForMatchQuery(
+		ctx,
+		matchId,
+	)
+}
+
+func (tx *TxPGClient) GetStrokesForMatchQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return tx.impl.GetStrokesForMatchQuery(
+		ctx,
+		matchId,
+	)
+}
+
+func (conn *ConnPGClient) GetStrokesForMatchQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return conn.impl.GetStrokesForMatchQuery(
+		ctx,
+		matchId,
+	)
+}
+func (p *pgClientImpl) GetStrokesForMatchQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return p.queryContext(
+		ctx,
+		`SELECT * FROM match_strokes
+	WHERE match_id = $1;`,
+		matchId,
+	)
+}
+
+func (p *PGClient) GetMatchParticipants(
+	ctx context.Context,
+	matchId int64,
+) (ret []Account, err error) {
+	return p.impl.GetMatchParticipants(
+		ctx,
+		matchId,
+	)
+}
+
+func (tx *TxPGClient) GetMatchParticipants(
+	ctx context.Context,
+	matchId int64,
+) (ret []Account, err error) {
+	return tx.impl.GetMatchParticipants(
+		ctx,
+		matchId,
+	)
+}
+
+func (conn *ConnPGClient) GetMatchParticipants(
+	ctx context.Context,
+	matchId int64,
+) (ret []Account, err error) {
+	return conn.impl.GetMatchParticipants(
+		ctx,
+		matchId,
+	)
+}
+func (p *pgClientImpl) GetMatchParticipants(
+	ctx context.Context,
+	matchId int64,
+) (ret []Account, err error) {
+	ret = []Account{}
+
+	var rows *sql.Rows
+	rows, err = p.GetMatchParticipantsQuery(
+		ctx,
+		matchId,
+	)
+	if err != nil {
+		return nil, p.client.errorConverter(err)
+	}
+	defer func() {
+		if err == nil {
+			err = rows.Close()
+			if err != nil {
+				ret = nil
+				err = p.client.errorConverter(err)
+			}
+		} else {
+			rowErr := rows.Close()
+			if rowErr != nil {
+				err = p.client.errorConverter(fmt.Errorf("%s AND %s", err.Error(), rowErr.Error()))
+			}
+		}
+	}()
+
+	for rows.Next() {
+		var row Account
+		err = row.Scan(ctx, p.client, rows)
+		ret = append(ret, row)
+	}
+
+	return
+}
+
+func (p *PGClient) GetMatchParticipantsQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return p.impl.GetMatchParticipantsQuery(
+		ctx,
+		matchId,
+	)
+}
+
+func (tx *TxPGClient) GetMatchParticipantsQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return tx.impl.GetMatchParticipantsQuery(
+		ctx,
+		matchId,
+	)
+}
+
+func (conn *ConnPGClient) GetMatchParticipantsQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return conn.impl.GetMatchParticipantsQuery(
+		ctx,
+		matchId,
+	)
+}
+func (p *pgClientImpl) GetMatchParticipantsQuery(
+	ctx context.Context,
+	matchId int64,
+) (*sql.Rows, error) {
+	return p.queryContext(
+		ctx,
+		`SELECT accounts.* FROM accounts
+	LEFT JOIN match_participants
+		ON accounts.id = match_participants.account_id
+		WHERE match_id = $1;`,
+		matchId,
+	)
+}
+
+func (p *PGClient) GetMatchesForAccount(
+	ctx context.Context,
+	accountId int64,
+) (ret []Match, err error) {
+	return p.impl.GetMatchesForAccount(
+		ctx,
+		accountId,
+	)
+}
+
+func (tx *TxPGClient) GetMatchesForAccount(
+	ctx context.Context,
+	accountId int64,
+) (ret []Match, err error) {
+	return tx.impl.GetMatchesForAccount(
+		ctx,
+		accountId,
+	)
+}
+
+func (conn *ConnPGClient) GetMatchesForAccount(
+	ctx context.Context,
+	accountId int64,
+) (ret []Match, err error) {
+	return conn.impl.GetMatchesForAccount(
+		ctx,
+		accountId,
+	)
+}
+func (p *pgClientImpl) GetMatchesForAccount(
+	ctx context.Context,
+	accountId int64,
+) (ret []Match, err error) {
+	ret = []Match{}
+
+	var rows *sql.Rows
+	rows, err = p.GetMatchesForAccountQuery(
+		ctx,
+		accountId,
+	)
+	if err != nil {
+		return nil, p.client.errorConverter(err)
+	}
+	defer func() {
+		if err == nil {
+			err = rows.Close()
+			if err != nil {
+				ret = nil
+				err = p.client.errorConverter(err)
+			}
+		} else {
+			rowErr := rows.Close()
+			if rowErr != nil {
+				err = p.client.errorConverter(fmt.Errorf("%s AND %s", err.Error(), rowErr.Error()))
+			}
+		}
+	}()
+
+	for rows.Next() {
+		var row Match
+		err = row.Scan(ctx, p.client, rows)
+		ret = append(ret, row)
+	}
+
+	return
+}
+
+func (p *PGClient) GetMatchesForAccountQuery(
+	ctx context.Context,
+	accountId int64,
+) (*sql.Rows, error) {
+	return p.impl.GetMatchesForAccountQuery(
+		ctx,
+		accountId,
+	)
+}
+
+func (tx *TxPGClient) GetMatchesForAccountQuery(
+	ctx context.Context,
+	accountId int64,
+) (*sql.Rows, error) {
+	return tx.impl.GetMatchesForAccountQuery(
+		ctx,
+		accountId,
+	)
+}
+
+func (conn *ConnPGClient) GetMatchesForAccountQuery(
+	ctx context.Context,
+	accountId int64,
+) (*sql.Rows, error) {
+	return conn.impl.GetMatchesForAccountQuery(
+		ctx,
+		accountId,
+	)
+}
+func (p *pgClientImpl) GetMatchesForAccountQuery(
+	ctx context.Context,
+	accountId int64,
+) (*sql.Rows, error) {
+	return p.queryContext(
+		ctx,
+		`SELECT matches.* FROM matches
+	LEFT JOIN match_participants
+		ON matches.id = match_participants.match_id
+		WHERE match_participants.account_id = $1;`,
+		accountId,
+	)
+}
+
 type DBQueries interface {
 	//
 	// automatic CRUD methods
@@ -7567,6 +7901,36 @@ type DBQueries interface {
 		courseId int64,
 	) (*sql.Rows, error)
 
+	// GetStrokesForMatch query
+	GetStrokesForMatch(
+		ctx context.Context,
+		matchId int64,
+	) ([]MatchStroke, error)
+	GetStrokesForMatchQuery(
+		ctx context.Context,
+		matchId int64,
+	) (*sql.Rows, error)
+
+	// GetMatchParticipants query
+	GetMatchParticipants(
+		ctx context.Context,
+		matchId int64,
+	) ([]Account, error)
+	GetMatchParticipantsQuery(
+		ctx context.Context,
+		matchId int64,
+	) (*sql.Rows, error)
+
+	// GetMatchesForAccount query
+	GetMatchesForAccount(
+		ctx context.Context,
+		accountId int64,
+	) ([]Match, error)
+	GetMatchesForAccountQuery(
+		ctx context.Context,
+		accountId int64,
+	) (*sql.Rows, error)
+
 	//
 	// stored function methods
 	//
@@ -7581,8 +7945,8 @@ type MatchParticipant struct {
 	Id        int64 `gorm:"column:id;is_primary"`
 	AccountId int64 `gorm:"column:account_id"`
 	MatchId   int64 `gorm:"column:match_id"`
-	Match     *Match
 	Account   *Account
+	Match     *Match
 }
 
 func (r *MatchParticipant) Scan(ctx context.Context, client *PGClient, rs *sql.Rows) error {
@@ -7685,9 +8049,9 @@ type MatchStroke struct {
 	HoleId     int64 `gorm:"column:hole_id"`
 	MatchOrder int64 `gorm:"column:match_order"`
 	Strokes    int64 `gorm:"column:strokes"`
+	Account    *Account
 	Hole       *Hole
 	Match      *Match
-	Account    *Account
 }
 
 func (r *MatchStroke) Scan(ctx context.Context, client *PGClient, rs *sql.Rows) error {

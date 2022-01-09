@@ -43,3 +43,34 @@
 	SELECT * FROM holes
 	WHERE course_id = $1;
 	'''
+
+[[query]]
+	name = "GetStrokesForMatch"
+	return_type = "[]*MatchStroke"
+	arg_names = "1:matchId"
+	body = '''
+	SELECT * FROM match_strokes
+	WHERE match_id = $1;
+	'''
+
+[[query]]
+	name = "GetMatchParticipants"
+	return_type = "[]*Account"
+	arg_names = "1:matchId"
+	body = '''
+	SELECT accounts.* FROM accounts
+	LEFT JOIN match_participants
+		ON accounts.id = match_participants.account_id
+		WHERE match_id = $1;
+	'''
+
+[[query]]
+	name = "GetMatchesForAccount"
+	return_type = "[]*Match"
+	arg_names = "1:accountId"
+	body = '''
+	SELECT matches.* FROM matches
+	LEFT JOIN match_participants
+		ON matches.id = match_participants.match_id
+		WHERE match_participants.account_id = $1;
+	'''

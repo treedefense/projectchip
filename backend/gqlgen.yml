@@ -36,6 +36,22 @@ models:
     fields:
       holes:
         resolver: true
+  Match:
+    fields:
+      course:
+        resolver: true
+      participants:
+        resolver: true
+      holes:
+        resolver: true
+  MatchStrokes:
+    fields:
+      account:
+        resolver: true
+      match:
+        resolver: true
+      hole:
+        resolver: true
   ID:
     model:
       - github.com/99designs/gqlgen/graphql.Int64
