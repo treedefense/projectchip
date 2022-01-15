@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgconn v1.10.1
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/opendoor/pggen v0.3.2
-	github.com/rs/cors v1.6.0
+	github.com/rs/cors v1.8.2
 	github.com/vektah/gqlparser/v2 v2.2.0
 )
 
