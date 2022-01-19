@@ -1,4 +1,4 @@
-import { holePickerPath } from '../../paths';
+import { coursePickerPath } from '../../paths';
 import { useNavigateSearch } from '../../../utils/navigateParams';
 import { useFindLocationNamesQuery } from '../../../graphql';
 
@@ -14,7 +14,7 @@ export function LocationPicker() {
         return (
           <button
             key={loc.id}
-            onClick={() => navigate(holePickerPath, {
+            onClick={() => navigate(coursePickerPath, {
               locationId: loc.id.toString(),
             })}
           >

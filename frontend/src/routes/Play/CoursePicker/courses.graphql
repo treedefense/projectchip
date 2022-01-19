@@ -1,0 +1,9 @@
+query findLocationCourses($locationID: ID!) {
+  location(location_id: $locationID) {
+    courses {
+      id
+      name
+    }
+  }
+}
+

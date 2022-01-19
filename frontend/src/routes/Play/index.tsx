@@ -1,5 +1,6 @@
 import { Outlet } from 'react-router-dom';
 import { LocationPicker } from './LocationPicker';
+import { CoursePicker } from './CoursePicker';
 import { HolePicker } from './HolePicker';
 
 export function Play() {
@@ -13,5 +14,6 @@ export function Play() {
 
 export {
   LocationPicker,
+  CoursePicker,
   HolePicker,
 };

@@ -1,9 +1,9 @@
-query findLocationHoles($locationID: ID!) {
-  location(id: $locationID) {
+query findCourseHoles($courseID: ID!) {
+  course(course_id: $courseID) {
     holes {
       id
-      number
-      name
+      course_order
+      par
     }
   }
 }

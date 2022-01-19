@@ -2,19 +2,19 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { CreateMatch } from '../../../db';
 import { matchesPath } from '../../paths';
-import { useFindLocationHolesQuery } from '../../../graphql';
+import { useFindCourseHolesQuery } from '../../../graphql';
 
 export function HolePicker() {
   const [searchParams] = useSearchParams();
   // TODO: Switch to local storage or something later
-  const id = searchParams.get('locationId') || '';
+  const id = searchParams.get('courseId') || '';
 
   const navigate = useNavigate();
   const [selectedHoles, setSelectedHoles] = useState<Record<string, Boolean>>({});
 
-  const { data, loading, error } = useFindLocationHolesQuery({
+  const { data, loading, error } = useFindCourseHolesQuery({
     variables: {
-      locationID: id,
+      courseID: id,
     }
   });
 
@@ -27,13 +27,13 @@ export function HolePicker() {
   }
 
   const onSubmit = () => {
-    if (!data || !data.location) {
+    if (!data || !data.course) {
       return;
     }
 
     // create a match here
-    const matchHoles = data.location.holes
-      .map(h => h.id)
+   /* const matchHoles = data.course?.holes
+      ?.map(h => h?.id)
       .filter((id: string) => selectedHoles[id] === true);
 
     const matchId = CreateMatch({
@@ -42,7 +42,7 @@ export function HolePicker() {
     });
 
     // we want to go to /matches/:matchId but this doesn't exist
-    navigate(`${matchesPath}/${matchId}`);
+    navigate(`${matchesPath}/${matchId}`);*/
   }
 
   return (
@@ -50,11 +50,15 @@ export function HolePicker() {
       <h2>Select holes</h2>
       { loading && <div>Loading locations</div> }
       { error && <div>Unable to load locations</div> }
-      { data && !data.location && <div>Unable to find that location</div> }
-      { data && data.location && <>
+      { data && !data.course && <div>Unable to find that location</div> }
+      { data && data.course && <>
         <ul>
           {
-            data.location.holes.map(hole => {
+            data.course?.holes?.map(hole => {
+              if(!hole){
+                return <div>hole not found.</div>
+              }
+
               return (
                 <li key={hole.id}>
                   <label>
@@ -64,7 +68,7 @@ export function HolePicker() {
                       checked={selectedHoles[hole.id] === true}
                       onChange={() => onHoleStateChanged(hole.id)}
                     />
-                    {hole.number}
+                    {hole.course_order}
                   </label>
                 </li>
               );
