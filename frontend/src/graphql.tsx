@@ -180,6 +180,13 @@ export type FindCourseHolesQueryVariables = Exact<{
 
 export type FindCourseHolesQuery = { __typename?: 'Query', course?: { __typename?: 'Course', holes?: Array<{ __typename?: 'Hole', id: string, course_order: number, par: number } | null | undefined> | null | undefined } | null | undefined };
 
+export type CreateNewMatchMutationVariables = Exact<{
+  newMatch?: InputMaybe<NewMatch>;
+}>;
+
+
+export type CreateNewMatchMutation = { __typename?: 'Mutation', createMatch: string };
+
 export type FindLocationNamesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
@@ -263,6 +270,37 @@ export function useFindCourseHolesLazyQuery(baseOptions?: Apollo.LazyQueryHookOp
 export type FindCourseHolesQueryHookResult = ReturnType<typeof useFindCourseHolesQuery>;
 export type FindCourseHolesLazyQueryHookResult = ReturnType<typeof useFindCourseHolesLazyQuery>;
 export type FindCourseHolesQueryResult = Apollo.QueryResult<FindCourseHolesQuery, FindCourseHolesQueryVariables>;
+export const CreateNewMatchDocument = gql`
+    mutation createNewMatch($newMatch: NewMatch) {
+  createMatch(newMatch: $newMatch)
+}
+    `;
+export type CreateNewMatchMutationFn = Apollo.MutationFunction<CreateNewMatchMutation, CreateNewMatchMutationVariables>;
+
+/**
+ * __useCreateNewMatchMutation__
+ *
+ * To run a mutation, you first call `useCreateNewMatchMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useCreateNewMatchMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [createNewMatchMutation, { data, loading, error }] = useCreateNewMatchMutation({
+ *   variables: {
+ *      newMatch: // value for 'newMatch'
+ *   },
+ * });
+ */
+export function useCreateNewMatchMutation(baseOptions?: Apollo.MutationHookOptions<CreateNewMatchMutation, CreateNewMatchMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<CreateNewMatchMutation, CreateNewMatchMutationVariables>(CreateNewMatchDocument, options);
+      }
+export type CreateNewMatchMutationHookResult = ReturnType<typeof useCreateNewMatchMutation>;
+export type CreateNewMatchMutationResult = Apollo.MutationResult<CreateNewMatchMutation>;
+export type CreateNewMatchMutationOptions = Apollo.BaseMutationOptions<CreateNewMatchMutation, CreateNewMatchMutationVariables>;
 export const FindLocationNamesDocument = gql`
     query findLocationNames {
   locations {

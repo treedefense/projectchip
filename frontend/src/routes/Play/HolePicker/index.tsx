@@ -1,8 +1,7 @@
 import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
-import { CreateMatch } from '../../../db';
 import { matchesPath } from '../../paths';
-import { useFindCourseHolesQuery } from '../../../graphql';
+import { useFindCourseHolesQuery, useCreateNewMatchMutation } from '../../../graphql';
 
 export function HolePicker() {
   const [searchParams] = useSearchParams();
@@ -18,6 +17,12 @@ export function HolePicker() {
     }
   });
 
+  const [createNewMatchMutation, { data:matchData, loading:matchLoading, error:matchError }] = useCreateNewMatchMutation();
+
+  if(matchData){
+    navigate(`${matchesPath}/${matchData.createMatch}`)
+  }
+
   const onHoleStateChanged = (id: string) => {
     const isSelected = selectedHoles?.[id];
     setSelectedHoles({
@@ -27,9 +32,20 @@ export function HolePicker() {
   }
 
   const onSubmit = () => {
+
     if (!data || !data.course) {
       return;
     }
+
+    createNewMatchMutation({
+      variables:{
+        newMatch:{
+          course_id:"1",
+          participant_ids:["1"],
+          hole_ids:["1","2"]
+        }
+      }
+    })
 
     // create a match here
    /* const matchHoles = data.course?.holes
@@ -51,7 +67,7 @@ export function HolePicker() {
       { loading && <div>Loading locations</div> }
       { error && <div>Unable to load locations</div> }
       { data && !data.course && <div>Unable to find that location</div> }
-      { data && data.course && <>
+      { data && data.course && !matchData && <>
         <ul>
           {
             data.course?.holes?.map(hole => {
@@ -75,11 +91,17 @@ export function HolePicker() {
             })
           }
           </ul>
+          <div>
+            <button onClick={() => onSubmit()}>Submit</button>
+          </div>
         </>
       }
-      <div>
-        <button onClick={() => onSubmit()}>Submit</button>
-      </div>
+      { data && data.course && matchData && <></>}
+      { data && data.course && matchLoading && <div>Creating new match</div>}
+      { data && data.course && matchError && <div>Unable to create new match.</div>}
+      
+      
     </main>
   );
 }
+// We need to unhardcode the chosen holes and make it respond to checked boxes.

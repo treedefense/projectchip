@@ -8,3 +8,6 @@ query findCourseHoles($courseID: ID!) {
   }
 }
 
+mutation createNewMatch($newMatch:NewMatch){
+  createMatch(newMatch:$newMatch)
+}
