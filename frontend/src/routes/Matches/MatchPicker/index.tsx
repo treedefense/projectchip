@@ -1,14 +1,21 @@
-import { GetMatches } from 'db';
 import { matchesPath } from '../../paths';
 import { useNavigate } from 'react-router-dom';
+import { useGetMyMatchesQuery } from '../../../graphql';
 
 export function MatchPicker() {
     const navigate = useNavigate();
-    const matches = GetMatches();
+    const { data, loading, error } = useGetMyMatchesQuery({
+           variables: {
+              accountID: "1"
+           },
+         });
 
     return (
         <main>
-            {matches.map(match => {
+            { loading && <div>Loading matches</div> }
+            { error && <div>Unable to load matches</div> }
+            { data && !data.matchesForAccount && <div>Unable to find matches</div> }
+            {data?.matchesForAccount?.map(match => {
                 return (
                     <button
                         key={match.id}

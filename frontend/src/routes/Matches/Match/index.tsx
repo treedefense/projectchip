@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { GetMatch } from '../../../db';
 import { useParams } from "react-router-dom";
 import { matchIdKey } from '../../paths';
 import './Match.css'
@@ -38,10 +37,6 @@ export function Match() {
         return <div></div>
     }
 
-    const match = GetMatch(parseInt(matchId, 10));
-    if (!match) {
-      return <div></div>
-    }
 
     // these do not work yet
     // <ScoreView holes={match.holes} strokes={strokes} />
@@ -53,15 +48,7 @@ export function Match() {
           <div>Hole</div>
           <div>Par</div>
           <div>Strokes</div>
-          {match.holeIDs.map((holeID, index) => {
-            return (
-              <React.Fragment key={holeID}>
-                <div>{holeID}</div>
-                <div>{strokes[index] || '-'}</div>
-              </React.Fragment>
-            );
-          })}
-          {strokes.length < match.holeIDs.length && <StrokePicker strokes={strokes} setStrokes={setStrokes} />}
+          
         </div>
       </main>
     );

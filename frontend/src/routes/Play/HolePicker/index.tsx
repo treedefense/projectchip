@@ -5,7 +5,6 @@ import { useFindCourseHolesQuery, useCreateNewMatchMutation } from '../../../gra
 
 export function HolePicker() {
   const [searchParams] = useSearchParams();
-  // TODO: Switch to local storage or something later
   const id = searchParams.get('courseId') || '';
 
   const navigate = useNavigate();
@@ -32,33 +31,29 @@ export function HolePicker() {
   }
 
   const onSubmit = () => {
-
     if (!data || !data.course) {
       return;
+    }
+
+    const matchHoles = [];
+    for (const h of (data.course?.holes || [])) {
+      if (!h) {
+        continue;
+      }
+      if (selectedHoles[h.id]) {
+        matchHoles.push(h.id)
+      }
     }
 
     createNewMatchMutation({
       variables:{
         newMatch:{
-          course_id:"1",
+          course_id:id,
           participant_ids:["1"],
-          hole_ids:["1","2"]
+          hole_ids: matchHoles
         }
       }
     })
-
-    // create a match here
-   /* const matchHoles = data.course?.holes
-      ?.map(h => h?.id)
-      .filter((id: string) => selectedHoles[id] === true);
-
-    const matchId = CreateMatch({
-      locationID: id,
-      holes: matchHoles,
-    });
-
-    // we want to go to /matches/:matchId but this doesn't exist
-    navigate(`${matchesPath}/${matchId}`);*/
   }
 
   return (

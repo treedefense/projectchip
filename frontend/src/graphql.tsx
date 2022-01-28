@@ -166,6 +166,13 @@ export type QueryMatchesForAccountArgs = {
   account_id: Scalars['ID'];
 };
 
+export type GetMyMatchesQueryVariables = Exact<{
+  accountID: Scalars['ID'];
+}>;
+
+
+export type GetMyMatchesQuery = { __typename?: 'Query', matchesForAccount?: Array<{ __typename?: 'Match', id: string, course: { __typename?: 'Course', name: string }, participants: Array<{ __typename?: 'Account', nickname: string }> }> | null | undefined };
+
 export type FindLocationCoursesQueryVariables = Exact<{
   locationID: Scalars['ID'];
 }>;
@@ -193,6 +200,47 @@ export type FindLocationNamesQueryVariables = Exact<{ [key: string]: never; }>;
 export type FindLocationNamesQuery = { __typename?: 'Query', locations: Array<{ __typename?: 'Location', id: string, name: string }> };
 
 
+export const GetMyMatchesDocument = gql`
+    query getMyMatches($accountID: ID!) {
+  matchesForAccount(account_id: $accountID) {
+    id
+    course {
+      name
+    }
+    participants {
+      nickname
+    }
+  }
+}
+    `;
+
+/**
+ * __useGetMyMatchesQuery__
+ *
+ * To run a query within a React component, call `useGetMyMatchesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMyMatchesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMyMatchesQuery({
+ *   variables: {
+ *      accountID: // value for 'accountID'
+ *   },
+ * });
+ */
+export function useGetMyMatchesQuery(baseOptions: Apollo.QueryHookOptions<GetMyMatchesQuery, GetMyMatchesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetMyMatchesQuery, GetMyMatchesQueryVariables>(GetMyMatchesDocument, options);
+      }
+export function useGetMyMatchesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetMyMatchesQuery, GetMyMatchesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetMyMatchesQuery, GetMyMatchesQueryVariables>(GetMyMatchesDocument, options);
+        }
+export type GetMyMatchesQueryHookResult = ReturnType<typeof useGetMyMatchesQuery>;
+export type GetMyMatchesLazyQueryHookResult = ReturnType<typeof useGetMyMatchesLazyQuery>;
+export type GetMyMatchesQueryResult = Apollo.QueryResult<GetMyMatchesQuery, GetMyMatchesQueryVariables>;
 export const FindLocationCoursesDocument = gql`
     query findLocationCourses($locationID: ID!) {
   location(location_id: $locationID) {

@@ -1,0 +1,11 @@
+query getMyMatches($accountID: ID!) {
+  matchesForAccount(account_id: $accountID) {
+    id
+    course {
+      name
+    }
+    participants {
+      nickname
+    }
+  }
+}
