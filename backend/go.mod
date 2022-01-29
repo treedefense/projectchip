@@ -3,7 +3,7 @@ module github.com/treedefense/projectchip
 go 1.17
 
 require (
-	github.com/99designs/gqlgen v0.15.1
+	github.com/99designs/gqlgen v0.16.0
 	github.com/ethanpailes/pgtypes v0.0.0-20210319175856-9f6ab13c3655
 	github.com/gorilla/websocket v1.4.2
 	github.com/jackc/pgconn v1.10.1
