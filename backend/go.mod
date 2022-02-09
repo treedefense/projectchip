@@ -3,14 +3,14 @@ module github.com/treedefense/projectchip
 go 1.17
 
 require (
-	github.com/99designs/gqlgen v0.15.1
+	github.com/99designs/gqlgen v0.16.0
 	github.com/ethanpailes/pgtypes v0.0.0-20210319175856-9f6ab13c3655
 	github.com/gorilla/websocket v1.4.2
 	github.com/jackc/pgconn v1.10.1
 	github.com/jackc/pgx/v4 v4.14.1
 	github.com/opendoor/pggen v0.3.2
 	github.com/rs/cors v1.8.2
-	github.com/vektah/gqlparser/v2 v2.2.0
+	github.com/vektah/gqlparser/v2 v2.3.1
 )
 
 require (
