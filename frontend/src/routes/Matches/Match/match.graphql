@@ -1,0 +1,10 @@
+query getMatchStrokes($matchId: ID!) {
+  matchStrokes(match_id: $matchId) {
+    id
+    hole {
+      course_order
+      par
+    }
+    strokes
+  }
+}

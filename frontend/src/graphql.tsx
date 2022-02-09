@@ -166,6 +166,13 @@ export type QueryMatchesForAccountArgs = {
   account_id: Scalars['ID'];
 };
 
+export type GetMatchStrokesQueryVariables = Exact<{
+  matchId: Scalars['ID'];
+}>;
+
+
+export type GetMatchStrokesQuery = { __typename?: 'Query', matchStrokes: Array<{ __typename?: 'MatchStroke', id: string, strokes: number, hole: { __typename?: 'Hole', course_order: number, par: number } }> };
+
 export type GetMyMatchesQueryVariables = Exact<{
   accountID: Scalars['ID'];
 }>;
@@ -200,6 +207,46 @@ export type FindLocationNamesQueryVariables = Exact<{ [key: string]: never; }>;
 export type FindLocationNamesQuery = { __typename?: 'Query', locations: Array<{ __typename?: 'Location', id: string, name: string }> };
 
 
+export const GetMatchStrokesDocument = gql`
+    query getMatchStrokes($matchId: ID!) {
+  matchStrokes(match_id: $matchId) {
+    id
+    hole {
+      course_order
+      par
+    }
+    strokes
+  }
+}
+    `;
+
+/**
+ * __useGetMatchStrokesQuery__
+ *
+ * To run a query within a React component, call `useGetMatchStrokesQuery` and pass it any options that fit your needs.
+ * When your component renders, `useGetMatchStrokesQuery` returns an object from Apollo Client that contains loading, error, and data properties
+ * you can use to render your UI.
+ *
+ * @param baseOptions options that will be passed into the query, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options;
+ *
+ * @example
+ * const { data, loading, error } = useGetMatchStrokesQuery({
+ *   variables: {
+ *      matchId: // value for 'matchId'
+ *   },
+ * });
+ */
+export function useGetMatchStrokesQuery(baseOptions: Apollo.QueryHookOptions<GetMatchStrokesQuery, GetMatchStrokesQueryVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useQuery<GetMatchStrokesQuery, GetMatchStrokesQueryVariables>(GetMatchStrokesDocument, options);
+      }
+export function useGetMatchStrokesLazyQuery(baseOptions?: Apollo.LazyQueryHookOptions<GetMatchStrokesQuery, GetMatchStrokesQueryVariables>) {
+          const options = {...defaultOptions, ...baseOptions}
+          return Apollo.useLazyQuery<GetMatchStrokesQuery, GetMatchStrokesQueryVariables>(GetMatchStrokesDocument, options);
+        }
+export type GetMatchStrokesQueryHookResult = ReturnType<typeof useGetMatchStrokesQuery>;
+export type GetMatchStrokesLazyQueryHookResult = ReturnType<typeof useGetMatchStrokesLazyQuery>;
+export type GetMatchStrokesQueryResult = Apollo.QueryResult<GetMatchStrokesQuery, GetMatchStrokesQueryVariables>;
 export const GetMyMatchesDocument = gql`
     query getMyMatches($accountID: ID!) {
   matchesForAccount(account_id: $accountID) {
