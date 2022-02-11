@@ -173,6 +173,14 @@ export type GetMatchStrokesQueryVariables = Exact<{
 
 export type GetMatchStrokesQuery = { __typename?: 'Query', matchStrokes: Array<{ __typename?: 'MatchStroke', id: string, strokes: number, hole: { __typename?: 'Hole', course_order: number, par: number } }> };
 
+export type SetStrokesMutationVariables = Exact<{
+  strokesId: Scalars['ID'];
+  strokes: Scalars['Int'];
+}>;
+
+
+export type SetStrokesMutation = { __typename?: 'Mutation', pushStrokes: string };
+
 export type GetMyMatchesQueryVariables = Exact<{
   accountID: Scalars['ID'];
 }>;
@@ -247,6 +255,38 @@ export function useGetMatchStrokesLazyQuery(baseOptions?: Apollo.LazyQueryHookOp
 export type GetMatchStrokesQueryHookResult = ReturnType<typeof useGetMatchStrokesQuery>;
 export type GetMatchStrokesLazyQueryHookResult = ReturnType<typeof useGetMatchStrokesLazyQuery>;
 export type GetMatchStrokesQueryResult = Apollo.QueryResult<GetMatchStrokesQuery, GetMatchStrokesQueryVariables>;
+export const SetStrokesDocument = gql`
+    mutation setStrokes($strokesId: ID!, $strokes: Int!) {
+  pushStrokes(id: $strokesId, strokes: $strokes)
+}
+    `;
+export type SetStrokesMutationFn = Apollo.MutationFunction<SetStrokesMutation, SetStrokesMutationVariables>;
+
+/**
+ * __useSetStrokesMutation__
+ *
+ * To run a mutation, you first call `useSetStrokesMutation` within a React component and pass it any options that fit your needs.
+ * When your component renders, `useSetStrokesMutation` returns a tuple that includes:
+ * - A mutate function that you can call at any time to execute the mutation
+ * - An object with fields that represent the current status of the mutation's execution
+ *
+ * @param baseOptions options that will be passed into the mutation, supported options are listed on: https://www.apollographql.com/docs/react/api/react-hooks/#options-2;
+ *
+ * @example
+ * const [setStrokesMutation, { data, loading, error }] = useSetStrokesMutation({
+ *   variables: {
+ *      strokesId: // value for 'strokesId'
+ *      strokes: // value for 'strokes'
+ *   },
+ * });
+ */
+export function useSetStrokesMutation(baseOptions?: Apollo.MutationHookOptions<SetStrokesMutation, SetStrokesMutationVariables>) {
+        const options = {...defaultOptions, ...baseOptions}
+        return Apollo.useMutation<SetStrokesMutation, SetStrokesMutationVariables>(SetStrokesDocument, options);
+      }
+export type SetStrokesMutationHookResult = ReturnType<typeof useSetStrokesMutation>;
+export type SetStrokesMutationResult = Apollo.MutationResult<SetStrokesMutation>;
+export type SetStrokesMutationOptions = Apollo.BaseMutationOptions<SetStrokesMutation, SetStrokesMutationVariables>;
 export const GetMyMatchesDocument = gql`
     query getMyMatches($accountID: ID!) {
   matchesForAccount(account_id: $accountID) {

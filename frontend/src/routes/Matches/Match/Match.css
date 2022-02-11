@@ -4,3 +4,10 @@
     align-items: center;
     justify-items: center;
 }
+
+.justRow {
+    display: grid;
+    grid: repeat(1,2rem) 2rem / autoflow 3rem;
+    align-items: left;
+    justify-items: left;
+}
