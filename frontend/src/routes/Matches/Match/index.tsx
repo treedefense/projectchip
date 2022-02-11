@@ -3,9 +3,8 @@ import { useParams } from "react-router-dom";
 import { holePickerPath, matchIdKey } from '../../paths';
 import { useGetMatchStrokesQuery, useSetStrokesMutation } from '../../../graphql';
 import './Match.css'
-import { Console } from 'console';
 
-function StrokePicker({ strokesId, strokesPar, setStrokes }: { strokesId: string; strokesPar: string; setStrokes: any; }) {
+function StrokePicker({ strokesId, strokesPar, setStrokes }: { strokesId: string; strokesPar: number; setStrokes: any; }) {
   return (
     <div>
       {[-3, -2, -1, 0, 1, 2, 3].map(strokeVal => {
@@ -15,7 +14,7 @@ function StrokePicker({ strokesId, strokesPar, setStrokes }: { strokesId: string
             setStrokes({
             variables: {
                strokesId: strokesId,
-               strokes: Number(Number(strokesPar) + Number(strokeVal))
+               strokes: strokesPar + strokeVal
             }});
           }
             }>
@@ -36,8 +35,6 @@ function ScoreView({ holes, strokes }: { holes: Hole[]; strokes: number[]; }) {
   return <div>Score: {score > 0 ? '+' : ''}{score.toString()}</div>;
 }
 */
-
-
 
 export function Match() {
   const params = useParams();
@@ -61,7 +58,7 @@ export function Match() {
   // <ScoreView holes={match.holes} strokes={strokes} />
 
   const strokesId: string = data?.matchStrokes.find(s => s.strokes === 0)?.id || ''
-  const strokesPar: string = data?.matchStrokes.find(s => s.strokes === 0)?.hole.par.toString() || ''
+  const strokesPar: number = data?.matchStrokes.find(s => s.strokes === 0)?.hole.par || 0
 
   return (
     <main>
