@@ -1,16 +1,24 @@
 import React, { useState } from 'react';
 import { useParams } from "react-router-dom";
 import { holePickerPath, matchIdKey } from '../../paths';
-import { useGetMatchStrokesQuery } from '../../../graphql';
+import { useGetMatchStrokesQuery, useSetStrokesMutation } from '../../../graphql';
 import './Match.css'
 
-function StrokePicker({ strokes, setStrokes }: { strokes: number[]; setStrokes: React.Dispatch<React.SetStateAction<any>>; }) {
+function StrokePicker({ strokesId, strokesPar, setStrokes }: { strokesId: string; strokesPar: number; setStrokes: any; }) {
   return (
     <div>
-      {[1, 2, 3, 4, 5, 6, 7, 8, 9].map(stroke => {
+      {[-3, -2, -1, 0, 1, 2, 3].map(strokeVal => {
         return (
-          <button key={stroke} onClick={() => setStrokes([...strokes, stroke])}>
-            {stroke}
+          <button key={strokeVal} onClick={() => 
+            {
+            setStrokes({
+            variables: {
+               strokesId: strokesId,
+               strokes: strokesPar + strokeVal
+            }});
+          }
+            }>
+            {strokeVal}
           </button>
         );
       })}
@@ -30,13 +38,14 @@ function ScoreView({ holes, strokes }: { holes: Hole[]; strokes: number[]; }) {
 
 export function Match() {
   const params = useParams();
-  //const [strokes, setStrokes] = useState<Array<number>>([]);
 
   const { data, loading, error } = useGetMatchStrokesQuery({
     variables: {
       matchId: params[matchIdKey] || ''
     },
   });
+
+  const [setStrokesMutation, { data: setData, loading: setLoading, error: setError }] = useSetStrokesMutation()
 
   const matchId = params[matchIdKey];
 
@@ -48,6 +57,9 @@ export function Match() {
   // these do not work yet
   // <ScoreView holes={match.holes} strokes={strokes} />
 
+  const strokesId: string = data?.matchStrokes.find(s => s.strokes === 0)?.id || ''
+  const strokesPar: number = data?.matchStrokes.find(s => s.strokes === 0)?.hole.par || 0
+
   return (
     <main>
       {loading && <div>Loading match</div>}
@@ -58,16 +70,17 @@ export function Match() {
           <div>Hole</div>
           <div>Par</div>
           <div>Strokes</div>
-          {data.matchStrokes.map(matchStroke => {
+          {data.matchStrokes.slice().sort((msa, msb) => msa.hole.course_order - msb.hole.course_order).map(matchStroke => {
             return (
               <>
                 <div>{matchStroke.hole.course_order}</div>
                 <div>{matchStroke.hole.par}</div>
-                <div>{matchStroke.strokes}</div>
+                <div>{matchStroke.strokes || '-'}</div>
               </>
             );
           })}
         </div>
+        <StrokePicker strokesId={strokesId} strokesPar={strokesPar} setStrokes={setStrokesMutation}/>
       </>
       }
     </main>

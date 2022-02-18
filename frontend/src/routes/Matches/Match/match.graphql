@@ -8,3 +8,7 @@ query getMatchStrokes($matchId: ID!) {
     strokes
   }
 }
+
+mutation setStrokes($strokesId: ID!, $strokes: Int!) {
+  pushStrokes(id: $strokesId, strokes: $strokes)
+}
