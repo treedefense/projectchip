@@ -2,18 +2,10 @@ import React from 'react';
 import { render } from 'react-dom';
 import { BrowserRouter } from "react-router-dom";
 import { Routes } from './routes';
+import { client } from './utils/client';
+import { ApolloProvider } from '@apollo/client';
 import './index.css';
 
-import {
-  ApolloClient,
-  InMemoryCache,
-  ApolloProvider,
-} from "@apollo/client";
-
-const client = new ApolloClient({
-  uri: process.env.REACT_APP_GRAPHQL_URI,
-  cache: new InMemoryCache()
-});
 
 render(
   <React.StrictMode>

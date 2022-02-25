@@ -1,30 +1,8 @@
-import React, { useState } from 'react';
 import { useParams } from "react-router-dom";
-import { holePickerPath, matchIdKey } from '../../paths';
+import { matchIdKey } from '../../paths';
 import { useGetMatchStrokesQuery, useSetStrokesMutation } from '../../../graphql';
+import { cache } from '../../../utils/client';
 import './Match.css'
-
-function StrokePicker({ strokesId, strokesPar, setStrokes }: { strokesId: string; strokesPar: number; setStrokes: any; }) {
-  return (
-    <div>
-      {[-3, -2, -1, 0, 1, 2, 3].map(strokeVal => {
-        return (
-          <button key={strokeVal} onClick={() => 
-            {
-            setStrokes({
-            variables: {
-               strokesId: strokesId,
-               strokes: strokesPar + strokeVal
-            }});
-          }
-            }>
-            {strokeVal}
-          </button>
-        );
-      })}
-    </div>
-  );
-}
 
 /*
 function ScoreView({ holes, strokes }: { holes: Hole[]; strokes: number[]; }) {
@@ -45,17 +23,13 @@ export function Match() {
     },
   });
 
-  const [setStrokesMutation, { data: setData, loading: setLoading, error: setError }] = useSetStrokesMutation()
+  const [setStrokesMutation, { data: setData, loading: setLoading, error: setError }] = useSetStrokesMutation();
 
   const matchId = params[matchIdKey];
 
   if (!matchId) {
     return <div></div>
   }
-
-
-  // these do not work yet
-  // <ScoreView holes={match.holes} strokes={strokes} />
 
   const strokesId: string = data?.matchStrokes.find(s => s.strokes === 0)?.id || ''
   const strokesPar: number = data?.matchStrokes.find(s => s.strokes === 0)?.hole.par || 0
@@ -80,9 +54,33 @@ export function Match() {
             );
           })}
         </div>
-        <StrokePicker strokesId={strokesId} strokesPar={strokesPar} setStrokes={setStrokesMutation}/>
       </>
       }
+      {data && !setLoading && <div>
+        {[-3, -2, -1, 0, 1, 2, 3].map(strokeVal => {
+        return (
+          <button key={strokeVal} onClick={() => {
+            setStrokesMutation({
+              variables: {
+                 strokesId: strokesId,
+                 strokes: strokesPar + strokeVal
+              },
+              onCompleted: async () => {
+                console.log('clearing cache', cache);
+                // ideally we would just refresh the one match stroke
+                // but this at least works for now
+                await cache.reset();
+              },
+            });
+          }}>
+            {strokeVal}
+          </button>
+        );
+      })}
+    </div>}
+      {setLoading && <>
+        <div>Setting stroke value</div>
+      </>}
     </main>
   );
 }

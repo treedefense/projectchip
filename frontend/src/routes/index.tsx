@@ -25,7 +25,7 @@ export function Routes() {
           <Route index element={<MatchPicker />}/>
           <Route path={paths.matchPath} element={<Match />} />
         </Route>
-        
+
         <Route path={paths.playPath} element={<Play />} >
           <Route index element={<LocationPicker />} />
           <Route path={paths.coursePickerPath} element={<CoursePicker />} />
