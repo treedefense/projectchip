@@ -4,16 +4,6 @@ import { useGetMatchStrokesQuery, useSetStrokesMutation } from '../../../graphql
 import { cache } from '../../../utils/client';
 import './Match.css'
 
-/*
-function ScoreView({ holes, strokes }: { holes: Hole[]; strokes: number[]; }) {
-  let score = 0;
-  for (let i = 0; i < strokes.length; i++) {
-    score += strokes[i] - holes[i].par;
-  }
-  return <div>Score: {score > 0 ? '+' : ''}{score.toString()}</div>;
-}
-*/
-
 export function Match() {
   const params = useParams();
 
@@ -23,7 +13,7 @@ export function Match() {
     },
   });
 
-  const [setStrokesMutation, { data: setData, loading: setLoading, error: setError }] = useSetStrokesMutation();
+  const [setStrokesMutation, { loading: setLoading }] = useSetStrokesMutation();
 
   const matchId = params[matchIdKey];
 
@@ -31,8 +21,16 @@ export function Match() {
     return <div></div>
   }
 
-  const strokesId: string = data?.matchStrokes.find(s => s.strokes === 0)?.id || ''
-  const strokesPar: number = data?.matchStrokes.find(s => s.strokes === 0)?.hole.par || 0
+  const strokesId: string = data?.matchStrokes.find(s => s.strokes === 0)?.id || '';
+  const strokesPar: number = data?.matchStrokes.find(s => s.strokes === 0)?.hole.par || 0;
+  const isComplete: boolean = data?.matchStrokes.find(s => s.strokes === 0) === undefined;
+
+  let score = 0;
+  data?.matchStrokes.forEach(s => {
+    score += s.strokes;
+    score -= s.hole.par;
+  });
+  const scoreDisplay = `${score > 0 ? '+' : ''}${score}`;
 
   return (
     <main>
@@ -40,6 +38,7 @@ export function Match() {
       {error && <div>Unable to load match</div>}
       {data && <>
         <h2>This Match</h2>
+        <div>Score: {scoreDisplay}</div>
         <div className="container">
           <div>Hole</div>
           <div>Par</div>
@@ -56,7 +55,7 @@ export function Match() {
         </div>
       </>
       }
-      {data && !setLoading && <div>
+      {data && !setLoading && !isComplete && <div>
         {[-3, -2, -1, 0, 1, 2, 3].map(strokeVal => {
         return (
           <button key={strokeVal} onClick={() => {
