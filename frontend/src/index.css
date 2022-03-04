@@ -1,3 +1,11 @@
+html {
+  --darkPrimary: #26A347;
+  --primary: #6EFF94;
+  --lightPrimary: #50F07B;
+  --accent: #A31519;
+  --lightAccent: #F04F54;
+}
+
 body {
   margin: 0;
   font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto', 'Oxygen',
@@ -5,6 +13,35 @@ body {
     sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
+  color: var(--primary);
+  background: #303030;
+}
+
+header {
+  text-align: center;
+}
+
+main {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 0 2rem 0 2rem;
+  gap: 0.5rem;
+}
+
+/* generic styles */
+button {
+  color: black;
+  font-size: large;
+  background: var(--darkPrimary);
+  border-radius: 5px;
+  padding: 0.5rem;
+  border-color: transparent;
+}
+
+button:hover {
+  background: var(--lightPrimary);
+  cursor: pointer;
 }
 
 code {

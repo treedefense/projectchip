@@ -4,12 +4,12 @@ import { CoursePicker } from './CoursePicker';
 import { HolePicker } from './HolePicker';
 
 export function Play() {
-  return (
-    <main>
+  return (<>
+    <header>
       <h1>Play a match</h1>
-      <Outlet />
-    </main>
-  );
+    </header>
+    <Outlet />
+  </>);
 }
 
 export {

@@ -3,6 +3,7 @@ import { Routes as ReactRoutes, Route, Outlet, Link } from 'react-router-dom';
 import { Home } from './Home';
 import { NoMatch } from './NoMatch';
 import { Matches, Match, MatchPicker } from './Matches';
+import './index.css';
 
 import {
   Play,
@@ -42,11 +43,9 @@ function Layout() {
   return (
     <>
       <nav>
-        <Link to={paths.homePath}>Project Chip</Link>
-        |
-        <Link to={paths.matchesPath}>Matches</Link>
-        |
-        <Link to={paths.playPath}>Play</Link>
+        <Link className="nav-link" to={paths.homePath}>Project Chip</Link>
+        <Link className="nav-link" to={paths.matchesPath}>Matches</Link>
+        <Link className="nav-link" to={paths.playPath}>Play</Link>
       </nav>
 
       {/* An <Outlet> renders whatever child route is currently active,

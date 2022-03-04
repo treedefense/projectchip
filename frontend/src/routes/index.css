@@ -1,0 +1,17 @@
+nav {
+  display: flex;
+  justify-content: flex-end;
+  padding-right: 1rem;
+  background: var(--darkPrimary);
+}
+
+.nav-link {
+  color: black;
+  padding: 1rem 0.5rem 0.5rem 0.5rem;
+  text-decoration: none;
+  font-size: 1.25rem;
+}
+
+.nav-link:hover {
+  background: var(--lightPrimary);
+}

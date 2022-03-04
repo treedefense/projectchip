@@ -94,8 +94,6 @@ export function HolePicker() {
       { data && data.course && matchData && <></>}
       { data && data.course && matchLoading && <div>Creating new match</div>}
       { data && data.course && matchError && <div>Unable to create new match.</div>}
-      
-      
     </main>
   );
 }
