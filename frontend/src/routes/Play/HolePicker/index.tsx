@@ -72,13 +72,14 @@ export function HolePicker() {
 
               return (
                 <li key={hole.id}>
-                  <label>
-                    <input
-                      type="checkbox"
-                      name={hole.id.toString()}
-                      checked={selectedHoles[hole.id] === true}
-                      onChange={() => onHoleStateChanged(hole.id)}
-                    />
+                  <input
+                    type="checkbox"
+                    id = {hole.id.toString()}
+                    name={hole.id.toString()}
+                    checked={selectedHoles[hole.id] === true}
+                    onChange={() => onHoleStateChanged(hole.id)}
+                  />
+                  <label htmlFor={hole.id.toString()}>
                     {hole.course_order}
                   </label>
                 </li>

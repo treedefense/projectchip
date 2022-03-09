@@ -1,4 +1,4 @@
-html {
+:root {
   --darkPrimary: #26A347;
   --primary: #6EFF94;
   --lightPrimary: #50F07B;
@@ -43,6 +43,42 @@ button:hover {
   background: var(--lightPrimary);
   cursor: pointer;
 }
+
+label {
+  cursor: pointer;
+  display: inline-block;
+  position: relative;
+  padding-left: 25px; /* 10 px padding right + 15px input type*/
+  margin-right: 10px; /* margin between inputs types */
+}
+
+label:before {  
+  content: "";
+  width: 15px;
+  height: 15px;
+  position: absolute;  
+  left: 0;
+}
+
+ul {
+  list-style: none;
+}
+
+input[type=checkbox]{
+  display: none
+}
+
+label:before {
+  background: url('../public/x-circle.svg') left center no-repeat;
+  height: 32px;
+  width: 32px;  
+}
+
+input[type=checkbox]:checked + label:before {  
+  background: url('../public/flag.svg') left center no-repeat;
+  height: 32px;
+  width: 32px;  
+} 
 
 code {
   font-family: source-code-pro, Menlo, Monaco, Consolas, 'Courier New',
