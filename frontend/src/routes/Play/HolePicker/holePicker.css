@@ -1,0 +1,27 @@
+.hole-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr 1fr;
+    grid-gap: 20px;
+}
+
+.hole-item {
+    display: flex;
+    font-size: 30px;
+    cursor: pointer;
+    background: #515151;
+    border-radius: 10px;
+    padding: 10px;
+    align-items: center;
+    column-gap: 10px;
+    transition: all 0.25s;
+}
+
+.hole-item:hover {
+    background: #202020;
+    transform: translate(-3px, -3px);
+}
+
+.selection-image {
+    width: 45px;
+    height: 45px;
+}

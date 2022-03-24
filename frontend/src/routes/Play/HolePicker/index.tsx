@@ -2,6 +2,9 @@ import { useState } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { matchesPath } from '../../paths';
 import { useFindCourseHolesQuery, useCreateNewMatchMutation } from '../../../graphql';
+import './holePicker.css';
+import flag from './flag.svg';
+import circle from './x-circle.svg';
 
 export function HolePicker() {
   const [searchParams] = useSearchParams();
@@ -22,7 +25,7 @@ export function HolePicker() {
     navigate(`${matchesPath}/${matchData.createMatch}`)
   }
 
-  const onHoleStateChanged = (id: string) => {
+  const onHoleClicked = (id: string) => {
     const isSelected = selectedHoles?.[id];
     setSelectedHoles({
       ...selectedHoles,
@@ -56,6 +59,7 @@ export function HolePicker() {
     })
   }
 
+
   return (
     <main>
       <h2>Select holes</h2>
@@ -63,7 +67,7 @@ export function HolePicker() {
       { error && <div>Unable to load locations</div> }
       { data && !data.course && <div>Unable to find that location</div> }
       { data && data.course && !matchData && <>
-        <ul>
+        <div className="hole-grid">
           {
             data.course?.holes?.map(hole => {
               if(!hole){
@@ -71,22 +75,19 @@ export function HolePicker() {
               }
 
               return (
-                <li key={hole.id}>
-                  <input
-                    type="checkbox"
-                    id = {hole.id.toString()}
-                    name={hole.id.toString()}
-                    checked={selectedHoles[hole.id] === true}
-                    onChange={() => onHoleStateChanged(hole.id)}
-                  />
-                  <label htmlFor={hole.id.toString()}>
+                <div
+                    key={hole.id}
+                    id={hole.id.toString()}
+                    onClick={() => onHoleClicked(hole.id)}
+                    className="hole-item"
+                >
+                    <img src={selectedHoles[hole.id] ? flag : circle} className="selection-image" />
                     {hole.course_order}
-                  </label>
-                </li>
+                </div>
               );
             })
           }
-          </ul>
+          </div>
           <div>
             <button onClick={() => onSubmit()}>Submit</button>
           </div>
