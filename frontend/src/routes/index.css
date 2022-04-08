@@ -14,4 +14,5 @@ nav {
 
 .nav-link:hover {
   background: var(--lightPrimary);
+  cursor: pointer;
 }

@@ -5,14 +5,15 @@ package main
 
 import (
 	"database/sql"
+	"fmt"
 	"log"
 	"net/http"
-	"os"
+
+	"github.com/caarlos0/env/v6"
+	"github.com/joho/godotenv"
 
 	"github.com/99designs/gqlgen/graphql/handler"
-	"github.com/99designs/gqlgen/graphql/handler/transport"
 	"github.com/99designs/gqlgen/graphql/playground"
-	"github.com/gorilla/websocket"
 	_ "github.com/jackc/pgx/v4/stdlib"
 	"github.com/rs/cors"
 	"github.com/treedefense/projectchip/db"
@@ -20,23 +21,21 @@ import (
 	"github.com/treedefense/projectchip/resolvers"
 )
 
-const defaultPort = "8080"
+type Config struct {
+	Address     string `env:"ADDRESS" envDefault:"localhost"`
+	Port        string `env:"PORT" envDefault:"8080"`
+	DatabaseUrl string `env:"DB_URL" envDefault:"postgres://postgres:password@localhost/projectchip"`
+	// add auth stuff
+}
 
-func main() {
-	// TODO: configs
-	port := os.Getenv("PORT")
-	if port == "" {
-		port = defaultPort
-	}
+type Server struct {
+	config *Config
+}
 
-	dbUrl := os.Getenv("DB_URL")
-	if dbUrl == "" {
-		dbUrl = "postgres://postgres:password@localhost/projectchip"
-	}
-
-	conn, err := sql.Open("pgx", dbUrl)
+func NewServer(config *Config) (*Server, error) {
+	conn, err := sql.Open("pgx", config.DatabaseUrl)
 	if err != nil {
-		log.Fatal(err)
+		return nil, fmt.Errorf("unable to connect to db: %w", err)
 	}
 
 	pgClient := db.NewPGClient(conn)
@@ -49,28 +48,50 @@ func main() {
 
 	// Add CORS middleware around every request
 	// See https://github.com/rs/cors for full option listing
+	// TODO: Disable cors when we use a single domain
 	c := cors.New(cors.Options{
 		AllowedOrigins:   []string{"http://localhost:3000"},
 		AllowCredentials: true,
 		Debug:            true,
 	})
 
-	srv := handler.NewDefaultServer(graph.NewExecutableSchema(schemaConfig))
+	graphQLServer := handler.NewDefaultServer(graph.NewExecutableSchema(schemaConfig))
 
-	srv.AddTransport(&transport.Websocket{
-		Upgrader: websocket.Upgrader{
-			CheckOrigin: func(r *http.Request) bool {
-				// Check against your desired domains here
-				return r.Host == "example.org"
-			},
-			ReadBufferSize:  1024,
-			WriteBufferSize: 1024,
-		},
-	})
+	s := &Server{
+		config: config,
+	}
 
 	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", c.Handler(srv))
+	http.Handle("/query", c.Handler(graphQLServer))
+	http.HandleFunc("/callback", s.AuthCallback)
+	http.HandleFunc("/logout", s.AuthLogout)
 
-	log.Printf("connect to http://localhost:%s/playground for GraphQL playground", port)
-	log.Fatal(http.ListenAndServe(":"+port, nil))
+	return s, nil
+}
+
+func (s *Server) AuthCallback(w http.ResponseWriter, req *http.Request) {
+}
+
+func (s *Server) AuthLogout(w http.ResponseWriter, req *http.Request) {
+}
+
+func (s *Server) ServeHTTP() error {
+	log.Printf("http://%s:%s/playground for GraphQL playground", s.config.Address, s.config.Port)
+	return http.ListenAndServe(fmt.Sprintf("%v:%v", s.config.Address, s.config.Port), nil)
+}
+
+func main() {
+	_ = godotenv.Load()
+
+	config := &Config{}
+	if err := env.Parse(config); err != nil {
+		log.Fatal(fmt.Errorf("unable to load config: %w", err))
+	}
+
+	server, err := NewServer(config)
+	if err != nil {
+		log.Fatal(fmt.Errorf("unable to create server: %w", err))
+	}
+
+	log.Fatal(server.ServeHTTP())
 }
