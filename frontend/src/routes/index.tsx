@@ -49,14 +49,24 @@ export function Routes() {
 }
 
 function Layout() {
-  const { isAuthenticated, loginWithRedirect } = useAuth0();
+  const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
   return (
     <>
       <nav>
         <Link className="nav-link" to={paths.homePath}>Project Chip</Link>
-        {isAuthenticated && <Link className="nav-link" to={paths.matchesPath}>Matches</Link>}
-        {isAuthenticated && <Link className="nav-link" to={paths.playPath}>Play</Link>}
-        {!isAuthenticated && <div className="nav-link" onClick={() => loginWithRedirect()}>Login</div>}
+        {!isAuthenticated && (<>
+            <div className="nav-link" onClick={() => loginWithRedirect()}>Login</div>
+        </>)}
+        {isAuthenticated && (<>
+            <Link className="nav-link" to={paths.matchesPath}>Matches</Link>
+            <Link className="nav-link" to={paths.playPath}>Play</Link>
+            <div
+                className="nav-link"
+                onClick={() => logout({returnTo: window.location.origin})}
+            >
+                Logout
+            </div>
+        </>)}
       </nav>
       <Outlet />
     </>
