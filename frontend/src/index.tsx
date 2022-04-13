@@ -3,8 +3,8 @@ import { render } from 'react-dom';
 import { BrowserRouter } from "react-router-dom";
 import { Routes } from './routes';
 import { client } from './utils/client';
+import { Auth0ProviderWithHistory } from './utils/auth';
 import { ApolloProvider } from '@apollo/client';
-import { Auth0ProviderWithHistory } from './auth';
 import './index.css';
 
 render(

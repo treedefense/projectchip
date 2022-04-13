@@ -4,7 +4,7 @@ import { useAuth0 } from "@auth0/auth0-react";
 import { Home } from './Home';
 import { NoMatch } from './NoMatch';
 import { Matches, Match, MatchPicker } from './Matches';
-import { ProtectedRoute } from './../auth';
+import { ProtectedRoute } from './../utils/auth';
 
 import './index.css';
 
