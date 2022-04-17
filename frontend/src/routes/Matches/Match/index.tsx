@@ -1,3 +1,4 @@
+import React from 'react';
 import { useParams } from "react-router-dom";
 import { matchIdKey } from '../../paths';
 import { useGetMatchStrokesQuery, useSetStrokesMutation } from '../../../graphql';
@@ -28,7 +29,8 @@ export function Match() {
   let score = 0;
   data?.matchStrokes.forEach(s => {
     score += s.strokes;
-    score -= s.hole.par;
+	if (s.strokes > 0)
+		score -= s.hole.par;
   });
   const scoreDisplay = `${score > 0 ? '+' : ''}${score}`;
 
@@ -45,11 +47,11 @@ export function Match() {
           <div>Strokes</div>
           {data.matchStrokes.slice().sort((msa, msb) => msa.hole.course_order - msb.hole.course_order).map(matchStroke => {
             return (
-              <>
+              <React.Fragment key={matchStroke.hole.course_order}>
                 <div>{matchStroke.hole.course_order}</div>
                 <div>{matchStroke.hole.par}</div>
                 <div>{matchStroke.strokes || '-'}</div>
-              </>
+              </React.Fragment>
             );
           })}
         </div>
@@ -65,7 +67,6 @@ export function Match() {
                  strokes: strokesPar + strokeVal
               },
               onCompleted: async () => {
-                console.log('clearing cache', cache);
                 // ideally we would just refresh the one match stroke
                 // but this at least works for now
                 await cache.reset();
