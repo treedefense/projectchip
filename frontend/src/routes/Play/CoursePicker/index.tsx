@@ -1,7 +1,7 @@
 import { holePickerPath } from '../../paths';
 import { useNavigateSearch } from '../../../utils/navigateParams';
 import { useFindLocationCoursesQuery } from '../../../graphql';
-import { useSearchParams, useNavigate } from 'react-router-dom';
+import { useSearchParams } from 'react-router-dom';
 
 export function CoursePicker() {
   const [searchParams] = useSearchParams();

@@ -81,7 +81,11 @@ export function HolePicker() {
                     onClick={() => onHoleClicked(hole.id)}
                     className="hole-item"
                 >
-                    <img src={selectedHoles[hole.id] ? flag : circle} className="selection-image" />
+                    <img
+						src={selectedHoles[hole.id] ? flag : circle}
+						className="selection-image"
+						alt={selectedHoles[hole.id] ? 'flag' : 'circle'}
+					/>
                     {hole.course_order}
                 </div>
               );
