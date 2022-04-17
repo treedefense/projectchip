@@ -88,16 +88,8 @@ func NewServer(config *Config) (*Server, error) {
 
 	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", s.validateToken(c.Handler(graphQLServer)))
-	http.HandleFunc("/callback", s.AuthCallback)
-	http.HandleFunc("/logout", s.AuthLogout)
 
 	return s, nil
-}
-
-func (s *Server) AuthCallback(w http.ResponseWriter, req *http.Request) {
-}
-
-func (s *Server) AuthLogout(w http.ResponseWriter, req *http.Request) {
 }
 
 func (s *Server) validateToken(next http.Handler) http.Handler {

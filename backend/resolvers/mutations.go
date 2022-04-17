@@ -60,11 +60,6 @@ func (r *mutationResolver) CreateLocation(ctx context.Context, name string, cour
 }
 
 func (r *mutationResolver) CreateMatch(ctx context.Context, newMatch *graph.NewMatch) (int64, error) {
-	/*
-	the first participant = the sender of the request
-	require JWT ( session id ) check that the participant that you passed in, is you
-	as a validation step
-	*/
 	var err error
 	match := &db.Match{
 		CourseId: &newMatch.CourseID,
