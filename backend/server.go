@@ -6,11 +6,13 @@ package main
 import (
 	"context"
 	"database/sql"
+	"embed"
 	"errors"
 	"fmt"
 	"log"
 	"net/http"
 	"strings"
+	"io/fs"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
@@ -21,7 +23,6 @@ import (
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
 	_ "github.com/jackc/pgx/v4/stdlib"
-	"github.com/rs/cors"
 	"github.com/treedefense/projectchip/db"
 	"github.com/treedefense/projectchip/graph"
 	"github.com/treedefense/projectchip/resolvers"
@@ -30,6 +31,11 @@ import (
 const (
 	authHeader  = "Authorization"
 	ctxTokenKey = "Auth0Token"
+)
+
+var (
+	//go:embed resources
+	resources embed.FS
 )
 
 type Config struct {
@@ -62,15 +68,6 @@ func NewServer(config *Config) (*Server, error) {
 		},
 	}
 
-	// Add CORS middleware around every request
-	// See https://github.com/rs/cors for full option listing
-	// TODO: Disable cors when we use a single domain
-	c := cors.New(cors.Options{
-		AllowedOrigins:   []string{"http://localhost:3000"},
-		AllowCredentials: true,
-		Debug:            true,
-	})
-
 	graphQLServer := handler.NewDefaultServer(graph.NewExecutableSchema(schemaConfig))
 
 	s := &Server{
@@ -87,7 +84,10 @@ func NewServer(config *Config) (*Server, error) {
 	s.tenantKeys = set
 
 	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", s.validateToken(c.Handler(graphQLServer)))
+	http.Handle("/query", s.validateToken(graphQLServer))
+
+	var htmlFS, _ = fs.Sub(resources, "resources")
+	http.Handle("/", http.FileServer(http.FS(htmlFS)))
 
 	return s, nil
 }
