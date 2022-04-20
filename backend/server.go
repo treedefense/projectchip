@@ -9,10 +9,11 @@ import (
 	"embed"
 	"errors"
 	"fmt"
+	"io/fs"
+	"io/ioutil"
 	"log"
 	"net/http"
 	"strings"
-	"io/fs"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
@@ -87,7 +88,19 @@ func NewServer(config *Config) (*Server, error) {
 	http.Handle("/query", s.validateToken(graphQLServer))
 
 	var htmlFS, _ = fs.Sub(resources, "resources")
-	http.Handle("/", http.FileServer(http.FS(htmlFS)))
+	indexFile, _ := htmlFS.Open("index.html")
+	indexBytes, _ := ioutil.ReadAll(indexFile)
+	htmlFileServer := http.FileServer(http.FS(htmlFS))
+
+	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
+		_, err := htmlFS.Open(strings.TrimLeft(req.URL.Path, "/"))
+		if err != nil {
+			// file not found, load the index instead
+			w.Write(indexBytes)
+		} else {
+			htmlFileServer.ServeHTTP(w, req)
+		}
+	})
 
 	return s, nil
 }

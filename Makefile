@@ -14,7 +14,7 @@ gen: gen-frontend gen-backend
 
 build-frontend:
 	cd frontend
-	BUILD_PATH=../backend/static npm run build
+	BUILD_PATH=../backend/resources npm run build
 
 build-backend:
 	cd backend
@@ -23,8 +23,8 @@ build-backend:
 build-docker:
 	docker build .
 
-build: build-frontend build-backend build-docker
+build: build-frontend build-backend
 
-run: build
+run:
 	cd backend
 	./server

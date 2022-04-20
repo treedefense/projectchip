@@ -20,7 +20,7 @@ COPY --from=FRONTEND /app/build /app/resources
 RUN CGO_ENABLED=0 go build -o server .
 
 # FINAL BUILD
-FROM alpine:latest
+FROM scratch
 WORKDIR /app
 
 COPY --from=BACKEND /app/server ./
