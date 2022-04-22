@@ -1,6 +1,5 @@
 # FRONTEND BUILD
 FROM node:16-alpine as FRONTEND
-
 WORKDIR /app
 
 COPY /frontend/package*.json ./
@@ -10,7 +9,6 @@ RUN npm run build
 
 # BACKEND BUILD
 FROM golang:1.18-alpine as BACKEND
-
 WORKDIR /app
 
 COPY backend/go.mod backend/go.sum ./
@@ -20,10 +18,11 @@ COPY --from=FRONTEND /app/build /app/resources
 RUN CGO_ENABLED=0 go build -o server .
 
 # FINAL BUILD
-FROM scratch
+FROM alpine as SERVER
 WORKDIR /app
 
-COPY --from=BACKEND /app/server ./
+RUN adduser -S -D -H -h /app appuser
+USER appuser
 
+COPY --from=BACKEND /app/server ./
 CMD ["./server"]
-EXPOSE 8080
