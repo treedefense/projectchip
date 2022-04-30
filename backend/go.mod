@@ -10,7 +10,7 @@ require (
 	github.com/jackc/pgx/v4 v4.16.0
 	github.com/joho/godotenv v1.4.0
 	github.com/lestrrat-go/jwx v1.2.23
-	github.com/opendoor/pggen v0.3.2
+	github.com/opendoor/pggen v0.3.3
 	github.com/vektah/gqlparser/v2 v2.4.2
 )
 
