@@ -4,11 +4,7 @@ import { useGetMyMatchesQuery } from '../../../graphql';
 
 export function MatchPicker() {
     const navigate = useNavigate();
-    const { data, loading, error } = useGetMyMatchesQuery({
-           variables: {
-              accountID: "1"
-           },
-         });
+    const { data, loading, error } = useGetMyMatchesQuery();
 
     return (
         <main>

@@ -5,7 +5,7 @@ export type InputMaybe<T> = Maybe<T>;
 export type Exact<T extends { [key: string]: unknown }> = { [K in keyof T]: T[K] };
 export type MakeOptional<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]?: Maybe<T[SubKey]> };
 export type MakeMaybe<T, K extends keyof T> = Omit<T, K> & { [SubKey in K]: Maybe<T[SubKey]> };
-const defaultOptions =  {}
+const defaultOptions = {} as const;
 /** All built-in and custom scalars, mapped to their actual values */
 export type Scalars = {
   ID: string;
@@ -161,11 +161,6 @@ export type QueryMatchStrokesArgs = {
   match_id: Scalars['ID'];
 };
 
-
-export type QueryMatchesForAccountArgs = {
-  account_id: Scalars['ID'];
-};
-
 export type GetMatchStrokesQueryVariables = Exact<{
   matchId: Scalars['ID'];
 }>;
@@ -181,26 +176,24 @@ export type SetStrokesMutationVariables = Exact<{
 
 export type SetStrokesMutation = { __typename?: 'Mutation', pushStrokes: string };
 
-export type GetMyMatchesQueryVariables = Exact<{
-  accountID: Scalars['ID'];
-}>;
+export type GetMyMatchesQueryVariables = Exact<{ [key: string]: never; }>;
 
 
-export type GetMyMatchesQuery = { __typename?: 'Query', matchesForAccount?: Array<{ __typename?: 'Match', id: string, course: { __typename?: 'Course', name: string }, participants: Array<{ __typename?: 'Account', nickname: string }> }> | null | undefined };
+export type GetMyMatchesQuery = { __typename?: 'Query', matchesForAccount?: Array<{ __typename?: 'Match', id: string, course: { __typename?: 'Course', name: string }, participants: Array<{ __typename?: 'Account', nickname: string }> }> | null };
 
 export type FindLocationCoursesQueryVariables = Exact<{
   locationID: Scalars['ID'];
 }>;
 
 
-export type FindLocationCoursesQuery = { __typename?: 'Query', location?: { __typename?: 'Location', courses?: Array<{ __typename?: 'Course', id: string, name: string } | null | undefined> | null | undefined } | null | undefined };
+export type FindLocationCoursesQuery = { __typename?: 'Query', location?: { __typename?: 'Location', courses?: Array<{ __typename?: 'Course', id: string, name: string } | null> | null } | null };
 
 export type FindCourseHolesQueryVariables = Exact<{
   courseID: Scalars['ID'];
 }>;
 
 
-export type FindCourseHolesQuery = { __typename?: 'Query', course?: { __typename?: 'Course', holes?: Array<{ __typename?: 'Hole', id: string, course_order: number, par: number } | null | undefined> | null | undefined } | null | undefined };
+export type FindCourseHolesQuery = { __typename?: 'Query', course?: { __typename?: 'Course', holes?: Array<{ __typename?: 'Hole', id: string, course_order: number, par: number } | null> | null } | null };
 
 export type CreateNewMatchMutationVariables = Exact<{
   newMatch?: InputMaybe<NewMatch>;
@@ -288,8 +281,8 @@ export type SetStrokesMutationHookResult = ReturnType<typeof useSetStrokesMutati
 export type SetStrokesMutationResult = Apollo.MutationResult<SetStrokesMutation>;
 export type SetStrokesMutationOptions = Apollo.BaseMutationOptions<SetStrokesMutation, SetStrokesMutationVariables>;
 export const GetMyMatchesDocument = gql`
-    query getMyMatches($accountID: ID!) {
-  matchesForAccount(account_id: $accountID) {
+    query getMyMatches {
+  matchesForAccount {
     id
     course {
       name
@@ -313,11 +306,10 @@ export const GetMyMatchesDocument = gql`
  * @example
  * const { data, loading, error } = useGetMyMatchesQuery({
  *   variables: {
- *      accountID: // value for 'accountID'
  *   },
  * });
  */
-export function useGetMyMatchesQuery(baseOptions: Apollo.QueryHookOptions<GetMyMatchesQuery, GetMyMatchesQueryVariables>) {
+export function useGetMyMatchesQuery(baseOptions?: Apollo.QueryHookOptions<GetMyMatchesQuery, GetMyMatchesQueryVariables>) {
         const options = {...defaultOptions, ...baseOptions}
         return Apollo.useQuery<GetMyMatchesQuery, GetMyMatchesQueryVariables>(GetMyMatchesDocument, options);
       }

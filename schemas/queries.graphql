@@ -15,6 +15,6 @@ type Query {
 
     # matches
     match(match_id: ID!): Match
-    matchesForAccount(account_id: ID!): [Match!]
+    matchesForAccount: [Match!]
     matchStrokes(match_id: ID!): [MatchStroke!]!
 }

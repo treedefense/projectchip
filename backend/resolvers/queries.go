@@ -42,7 +42,8 @@ func (r *queryResolver) Match(ctx context.Context, matchID int64) (*db.Match, er
 	return r.Db.GetMatch(ctx, matchID)
 }
 
-func (r *queryResolver) MatchesForAccount(ctx context.Context, accountID int64) ([]*db.Match, error) {
+func (r *queryResolver) MatchesForAccount(ctx context.Context) ([]*db.Match, error) {
+	accountID := int64(1)
 	matches, err := MatchesToSlicePointer(r.Db.GetMatchesForAccount(ctx, accountID))
 	if err != nil {
 		return nil, err

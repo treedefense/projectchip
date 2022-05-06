@@ -1,5 +1,5 @@
-query getMyMatches($accountID: ID!) {
-  matchesForAccount(account_id: $accountID) {
+query getMyMatches {
+  matchesForAccount {
     id
     course {
       name
