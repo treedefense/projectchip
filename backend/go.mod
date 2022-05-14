@@ -6,7 +6,7 @@ require (
 	github.com/99designs/gqlgen v0.17.5
 	github.com/caarlos0/env/v6 v6.9.1
 	github.com/ethanpailes/pgtypes v0.0.0-20210319175856-9f6ab13c3655
-	github.com/jackc/pgconn v1.12.0
+	github.com/jackc/pgconn v1.12.1
 	github.com/jackc/pgx/v4 v4.16.0
 	github.com/joho/godotenv v1.4.0
 	github.com/lestrrat-go/jwx v1.2.24
