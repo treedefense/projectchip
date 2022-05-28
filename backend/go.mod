@@ -9,7 +9,7 @@ require (
 	github.com/jackc/pgconn v1.12.1
 	github.com/jackc/pgx/v4 v4.16.1
 	github.com/joho/godotenv v1.4.0
-	github.com/lestrrat-go/jwx v1.2.24
+	github.com/lestrrat-go/jwx v1.2.25
 	github.com/opendoor/pggen v0.3.3
 	github.com/vektah/gqlparser/v2 v2.4.4
 )
