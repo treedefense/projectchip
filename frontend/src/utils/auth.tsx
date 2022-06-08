@@ -12,7 +12,7 @@ export const Auth0ProviderWithHistory = ({
   const audience: string | undefined = process.env.REACT_APP_AUTH0_AUDIENCE;
   const redirectUri: string | undefined = process.env.REACT_APP_AUTH0_CALLBACK_URI;
 
-  const onRedirectCallback = (appState: AppState) => {
+  const onRedirectCallback = (appState?: AppState) => {
     navigate(appState?.returnTo || window.location.pathname);
   };
 

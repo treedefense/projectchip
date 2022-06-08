@@ -86,6 +86,12 @@ func NewServer(config *Config) (*Server, error) {
 
 	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", s.validateToken(graphQLServer))
+	http.HandleFunc("/login", func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("trying to login"))
+	})
+	http.HandleFunc("/logout", func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("trying to logout"))
+	})
 
 	var htmlFS, _ = fs.Sub(resources, "resources")
 	indexFile, _ := htmlFS.Open("index.html")

@@ -27,4 +27,4 @@ build: build-frontend build-backend
 
 run:
 	cd backend
-	./server
+	go run server.go
