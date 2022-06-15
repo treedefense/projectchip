@@ -1,12 +1,10 @@
-import { useEffect } from 'react';
-import { Routes as ReactRoutes, Route, Outlet, Link, useNavigate } from 'react-router-dom';
-import { useAuth0 } from "@auth0/auth0-react";
+import { Routes as ReactRoutes, Route, Outlet, Link } from 'react-router-dom';
+// import { useAuth0 } from "@auth0/auth0-react";
 
 import { Home } from './Home';
 import { NoMatch } from './NoMatch';
 import { Matches, Match, MatchPicker } from './Matches';
 import { ProtectedRoute } from '../utils/auth';
-import { setToken } from '../utils/cookies';
 
 import './index.css';
 
@@ -22,11 +20,11 @@ import * as paths from './paths';
 // Route the paths to the proper route element.
 // Heavily tied into the layout
 export function Routes() {
-	const { isLoading } = useAuth0();
+	// const { isLoading } = useAuth0();
 
-	if (isLoading) {
-		return <div> Loading auth </div>;
-	}
+	// if (isLoading) {
+	// return <div> Loading auth </div>;
+	// }
 
 	return (
 		<ReactRoutes>
@@ -44,44 +42,15 @@ export function Routes() {
 					<Route path={paths.holePickerPath} element={<HolePicker />} />
 				</Route>
 
-				<Route path={paths.authRedirectPath} element={<AuthCallbackRoute />} />
-				<Route path={paths.authLogoutPath} element={<AuthLogoutRoute />} />
 				<Route path="*" element={<NoMatch />} />
 			</Route>
 		</ReactRoutes>
 	)
 }
 
-function AuthCallbackRoute() {
-	const { getAccessTokenSilently } = useAuth0();
-	const navigate = useNavigate();
-
-	useEffect(() => {
-		async function getToken() {
-			const token = await getAccessTokenSilently();
-			setToken(token);
-			navigate(paths.matchesPath);
-		}
-
-		getToken();
-	});
-
-	return <div>Redirecting</div>
-}
-
-function AuthLogoutRoute() {
-	const navigate = useNavigate();
-
-	useEffect(() => {
-		setToken("");
-		navigate(paths.homePath);
-	});
-
-	return <div>Redirecting</div>
-}
-
 function Layout() {
-	const { isAuthenticated, loginWithRedirect, logout } = useAuth0();
+	// const { isAuthenticated } = useAuth0();
+	const isAuthenticated = false;
 	return (
 		<>
 			<nav>
@@ -89,9 +58,7 @@ function Layout() {
 				{!isAuthenticated && (<>
 					<div
 						className="nav-link"
-						onClick={() =>
-							loginWithRedirect({ redirectUri: window.location.origin + paths.authRedirectPath
-						})}
+						onClick={() => window.location.pathname = paths.loginPath}
 					>
 						Login
 					</div>
@@ -101,7 +68,7 @@ function Layout() {
 					<Link className="nav-link" to={paths.playPath}>Play</Link>
 					<div
 						className="nav-link"
-						onClick={() => logout({ returnTo: window.location.origin + paths.authLogoutPath })}
+						onClick={() => window.location.pathname = paths.logoutPath}
 					>
 						Logout
 					</div>

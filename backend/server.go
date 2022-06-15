@@ -4,22 +4,24 @@ package main
 //go:generate go run github.com/99designs/gqlgen
 
 import (
-	"context"
 	"database/sql"
 	"embed"
-	"errors"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
+	"net/url"
 	"strings"
+
+	// "encoding/json"
+	"time"
+
+	"github.com/auth0/go-jwt-middleware/v2/jwks"
+	"github.com/auth0/go-jwt-middleware/v2/validator"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
-
-	"github.com/lestrrat-go/jwx/jwk"
-	"github.com/lestrrat-go/jwx/jwt"
 
 	"github.com/99designs/gqlgen/graphql/handler"
 	"github.com/99designs/gqlgen/graphql/playground"
@@ -40,19 +42,22 @@ var (
 )
 
 type Config struct {
-	Address         string `env:"ADDRESS" envDefault:"localhost"`
-	Port            string `env:"PORT" envDefault:"8080"`
-	DatabaseUrl     string `env:"DB_URL" envDefault:"postgres://postgres:password@localhost/projectchip"`
-	AuthDomain      string `env:"AUTH0_DOMAIN"`
-	AuthClientID    string `env:"AUTH0_CLIENT_ID"`
-	AuthSecret      string `env:"AUTH0_CLIENT_SECRET"`
-	AuthCallbackUrl string `env:"AUTH0_CALLBACK_URL"`
-	AuthAudience    string `env:"AUTH0_AUDIENCE"`
+	Address          string `env:"ADDRESS" envDefault:"localhost"`
+	Port             string `env:"PORT" envDefault:"8080"`
+	DatabaseUrl      string `env:"DB_URL" envDefault:"postgres://postgres:password@localhost/projectchip"`
+	AuthDomain       string `env:"AUTH0_DOMAIN"`
+	AuthClientID     string `env:"AUTH0_CLIENT_ID"`
+	AuthSecret       string `env:"AUTH0_CLIENT_SECRET"`
+	AuthAudience     string `env:"AUTH0_AUDIENCE"`
+	AuthCallbackPath string `env:"CALLBACK_PATH"`
+	AuthLoginPath    string `env:"LOGIN_PATH"`
+	AuthLogoutPath   string `env:"LOGOUT_PATH"`
 }
 
 type Server struct {
-	config     *Config
-	tenantKeys jwk.Set
+	config       *Config
+	jwtProvider  *jwks.CachingProvider
+	jwtValidator *validator.Validator
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -75,17 +80,38 @@ func NewServer(config *Config) (*Server, error) {
 		config: config,
 	}
 
-	set, err := jwk.Fetch(
-		context.Background(),
-		fmt.Sprintf("https://%s/.well-known/jwks.json", config.AuthDomain),
-	)
-	if err != nil {
-		log.Fatalf("failed to parse tenant json web keys: %s\n", err)
-	}
-	s.tenantKeys = set
-
 	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
-	http.Handle("/query", s.validateToken(graphQLServer))
+	http.Handle("/query", graphQLServer)
+	http.HandleFunc("/"+config.AuthLoginPath, func(w http.ResponseWriter, req *http.Request) {
+		redirectUri := fmt.Sprintf(
+			"https://%v/authorize?client_id=%v&redirect_uri=http://%v:%v/%v&%v&%v&%v",
+			config.AuthDomain,
+			config.AuthClientID,
+			config.Address,
+			config.Port,
+			config.AuthCallbackPath,
+			"response_type=token",
+			"response_mode=query",
+			"audience="+config.AuthAudience,
+		)
+		fmt.Println(redirectUri)
+		http.Redirect(w, req, redirectUri, http.StatusPermanentRedirect)
+	})
+	http.HandleFunc("/"+config.AuthLogoutPath, func(w http.ResponseWriter, req *http.Request) {
+		w.Write([]byte("trying to logout"))
+	})
+	http.HandleFunc("/"+config.AuthCallbackPath, func(w http.ResponseWriter, req *http.Request) {
+		rawToken := req.URL.Query().Get("access_token")
+		fmt.Println("token:", rawToken)
+		token, err := s.jwtValidator.ValidateToken(req.Context(), rawToken)
+		if err != nil {
+			fmt.Printf("failed to parse payload: %s\n", err)
+			w.WriteHeader(http.StatusUnauthorized)
+			return
+		}
+		fmt.Println(token)
+		w.Write([]byte("worked"))
+	})
 
 	var htmlFS, _ = fs.Sub(resources, "resources")
 	indexFile, _ := htmlFS.Open("index.html")
@@ -102,48 +128,28 @@ func NewServer(config *Config) (*Server, error) {
 		}
 	})
 
-	return s, nil
-}
-
-func (s *Server) validateToken(next http.Handler) http.Handler {
-	return http.HandlerFunc(func(rw http.ResponseWriter, req *http.Request) {
-		token, err := s.extractToken(req)
-		if err != nil {
-			fmt.Printf("failed to parse payload: %s\n", err)
-			rw.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		ctxWithToken := context.WithValue(req.Context(), ctxTokenKey, token)
-		next.ServeHTTP(rw, req.WithContext(ctxWithToken))
-	})
-}
-
-// extractToken parses the Authorization HTTP header for valid JWT token and
-// validates it with AUTH0 JWK keys. Also verifies if the audience present in
-// the token matches with the designated audience as per current configuration.
-func (s *Server) extractToken(req *http.Request) (jwt.Token, error) {
-	authorization := req.Header.Get(authHeader)
-	if authorization == "" {
-		return nil, errors.New("authorization header missing")
-	}
-
-	bearerAndToken := strings.Split(authorization, " ")
-	if len(bearerAndToken) < 2 {
-		return nil, errors.New("malformed authorization header: " + authorization)
-	}
-
-	token, err := jwt.Parse(
-		[]byte(bearerAndToken[1]),
-		jwt.WithKeySet(s.tenantKeys),
-		jwt.WithValidate(true),
-		jwt.WithAudience(s.config.AuthAudience),
-	)
-
+	issuerURL, err := url.Parse(fmt.Sprintf("https://%v/", config.AuthDomain))
 	if err != nil {
-		return nil, err
+		return s, fmt.Errorf("failed to parse the issuer url: %w", err)
 	}
 
-	return token, nil
+	s.jwtProvider = jwks.NewCachingProvider(issuerURL, 5*time.Minute)
+
+	// Set up the validator.
+	jwtValidator, err := validator.New(
+		s.jwtProvider.KeyFunc,
+		validator.RS256,
+		issuerURL.String(),
+		[]string{config.AuthAudience},
+		validator.WithAllowedClockSkew(time.Minute),
+	)
+	if err != nil {
+		return s, fmt.Errorf("failed to set up the validator: %w", err)
+	}
+
+	s.jwtValidator = jwtValidator
+
+	return s, nil
 }
 
 func (s *Server) ServeHTTP() error {
