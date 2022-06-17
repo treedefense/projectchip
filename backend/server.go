@@ -4,21 +4,22 @@ package main
 //go:generate go run github.com/99designs/gqlgen
 
 import (
+	"context"
+	"crypto/rand"
 	"database/sql"
 	"embed"
+	"encoding/base64"
+	"errors"
 	"fmt"
 	"io/fs"
 	"io/ioutil"
 	"log"
 	"net/http"
-	"net/url"
 	"strings"
 
-	// "encoding/json"
-	"time"
-
-	"github.com/auth0/go-jwt-middleware/v2/jwks"
-	"github.com/auth0/go-jwt-middleware/v2/validator"
+	"github.com/coreos/go-oidc/v3/oidc"
+	"github.com/gorilla/sessions"
+	"golang.org/x/oauth2"
 
 	"github.com/caarlos0/env/v6"
 	"github.com/joho/godotenv"
@@ -52,12 +53,14 @@ type Config struct {
 	AuthCallbackPath string `env:"CALLBACK_PATH"`
 	AuthLoginPath    string `env:"LOGIN_PATH"`
 	AuthLogoutPath   string `env:"LOGOUT_PATH"`
+	SessionKey       string `env:"SESSION_KEY"`
 }
 
 type Server struct {
 	config       *Config
-	jwtProvider  *jwks.CachingProvider
-	jwtValidator *validator.Validator
+	sessions     sessions.Store
+	oidcProvider *oidc.Provider
+	oauthConfig  oauth2.Config
 }
 
 func NewServer(config *Config) (*Server, error) {
@@ -76,48 +79,46 @@ func NewServer(config *Config) (*Server, error) {
 
 	graphQLServer := handler.NewDefaultServer(graph.NewExecutableSchema(schemaConfig))
 
+	provider, err := oidc.NewProvider(
+		context.Background(),
+		fmt.Sprintf("https://%v/", config.AuthDomain),
+	)
+	if err != nil {
+		return nil, err
+	}
+
 	s := &Server{
-		config: config,
+		config:       config,
+		sessions:     sessions.NewCookieStore([]byte(config.SessionKey)),
+		oidcProvider: provider,
+		oauthConfig: oauth2.Config{
+			ClientID:     config.AuthClientID,
+			ClientSecret: config.AuthSecret,
+			RedirectURL: fmt.Sprintf(
+				"http://%v:%v/%v",
+				config.Address,
+				config.Port,
+				config.AuthCallbackPath,
+			),
+			Endpoint: provider.Endpoint(),
+			Scopes:   []string{oidc.ScopeOpenID, "profile"},
+		},
 	}
 
 	http.Handle("/playground", playground.Handler("GraphQL playground", "/query"))
 	http.Handle("/query", graphQLServer)
-	http.HandleFunc("/"+config.AuthLoginPath, func(w http.ResponseWriter, req *http.Request) {
-		redirectUri := fmt.Sprintf(
-			"https://%v/authorize?client_id=%v&redirect_uri=http://%v:%v/%v&%v&%v&%v",
-			config.AuthDomain,
-			config.AuthClientID,
-			config.Address,
-			config.Port,
-			config.AuthCallbackPath,
-			"response_type=token",
-			"response_mode=query",
-			"audience="+config.AuthAudience,
-		)
-		fmt.Println(redirectUri)
-		http.Redirect(w, req, redirectUri, http.StatusPermanentRedirect)
-	})
-	http.HandleFunc("/"+config.AuthLogoutPath, func(w http.ResponseWriter, req *http.Request) {
-		w.Write([]byte("trying to logout"))
-	})
-	http.HandleFunc("/"+config.AuthCallbackPath, func(w http.ResponseWriter, req *http.Request) {
-		rawToken := req.URL.Query().Get("access_token")
-		fmt.Println("token:", rawToken)
-		token, err := s.jwtValidator.ValidateToken(req.Context(), rawToken)
-		if err != nil {
-			fmt.Printf("failed to parse payload: %s\n", err)
-			w.WriteHeader(http.StatusUnauthorized)
-			return
-		}
-		fmt.Println(token)
-		w.Write([]byte("worked"))
-	})
+
+	// auth routes
+	http.HandleFunc("/"+config.AuthLoginPath, s.HandleLogin)
+	http.HandleFunc("/"+config.AuthLogoutPath, s.HandleLogout)
+	http.HandleFunc("/"+config.AuthCallbackPath, s.HandleAuthorize)
 
 	var htmlFS, _ = fs.Sub(resources, "resources")
 	indexFile, _ := htmlFS.Open("index.html")
 	indexBytes, _ := ioutil.ReadAll(indexFile)
 	htmlFileServer := http.FileServer(http.FS(htmlFS))
 
+	// handle all other routes as either a file or our index page
 	http.HandleFunc("/", func(w http.ResponseWriter, req *http.Request) {
 		_, err := htmlFS.Open(strings.TrimLeft(req.URL.Path, "/"))
 		if err != nil {
@@ -128,28 +129,104 @@ func NewServer(config *Config) (*Server, error) {
 		}
 	})
 
-	issuerURL, err := url.Parse(fmt.Sprintf("https://%v/", config.AuthDomain))
-	if err != nil {
-		return s, fmt.Errorf("failed to parse the issuer url: %w", err)
-	}
-
-	s.jwtProvider = jwks.NewCachingProvider(issuerURL, 5*time.Minute)
-
-	// Set up the validator.
-	jwtValidator, err := validator.New(
-		s.jwtProvider.KeyFunc,
-		validator.RS256,
-		issuerURL.String(),
-		[]string{config.AuthAudience},
-		validator.WithAllowedClockSkew(time.Minute),
-	)
-	if err != nil {
-		return s, fmt.Errorf("failed to set up the validator: %w", err)
-	}
-
-	s.jwtValidator = jwtValidator
-
 	return s, nil
+}
+
+func generateRandomState() (string, error) {
+	b := make([]byte, 32)
+	_, err := rand.Read(b)
+	if err != nil {
+		return "", err
+	}
+
+	state := base64.StdEncoding.EncodeToString(b)
+
+	return state, nil
+}
+
+func (s *Server) HandleLogin(w http.ResponseWriter, req *http.Request) {
+	state, err := generateRandomState()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Save the state inside the session.
+	session, _ := s.sessions.Get(req, "session")
+	session.Values["state"] = state
+	if err := session.Save(req, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	redirectUri := s.oauthConfig.AuthCodeURL(state)
+	http.Redirect(w, req, redirectUri, http.StatusPermanentRedirect)
+}
+
+func (s *Server) HandleLogout(w http.ResponseWriter, req *http.Request) {
+	w.Write([]byte("logout"))
+}
+
+// VerifyIDToken verifies that an *oauth2.Token is a valid *oidc.IDToken.
+func (s *Server) VerifyIDToken(ctx context.Context, token *oauth2.Token) (*oidc.IDToken, error) {
+	rawIDToken, ok := token.Extra("id_token").(string)
+	if !ok {
+		return nil, errors.New("no id_token field in oauth2 token")
+	}
+
+	oidcConfig := &oidc.Config{
+		ClientID: s.config.AuthClientID,
+	}
+
+	return s.oidcProvider.Verifier(oidcConfig).Verify(ctx, rawIDToken)
+}
+
+func (s *Server) HandleAuthorize(w http.ResponseWriter, req *http.Request) {
+	session, err := s.sessions.Get(req, "session")
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+	}
+
+	queryState := req.URL.Query().Get("state")
+	sessionState := session.Values["state"]
+	if queryState != fmt.Sprint(sessionState) {
+		http.Error(w, err.Error(), http.StatusBadRequest)
+		return
+	}
+
+	// Exchange an authorization code for a token.
+	queryCode := req.URL.Query().Get("code")
+	token, err := s.oauthConfig.Exchange(req.Context(), queryCode)
+	if err != nil {
+		http.Error(w, "Failed to exchange an authorization code for a token", http.StatusUnauthorized)
+		return
+	}
+
+	/* here is our email
+	idToken, err := s.VerifyIDToken(req.Context(), token)
+	if err != nil {
+		http.Error(w, "Failed to verify ID Token.", http.StatusInternalServerError)
+		return
+	}
+
+	var profile map[string]interface{}
+	if err := idToken.Claims(&profile); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	email := profile["email"]
+	fmt.Println("email:", email)
+	*/
+
+	session.Values["access_token"] = token.AccessToken
+	if err := session.Save(req, w); err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+
+	// Redirect to the home page.
+	http.Redirect(w, req, "/", http.StatusPermanentRedirect)
 }
 
 func (s *Server) ServeHTTP() error {
