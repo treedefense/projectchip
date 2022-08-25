@@ -7,7 +7,7 @@ require (
 	github.com/caarlos0/env/v6 v6.9.3
 	github.com/ethanpailes/pgtypes v0.0.0-20210319175856-9f6ab13c3655
 	github.com/jackc/pgconn v1.13.0
-	github.com/jackc/pgx/v4 v4.16.1
+	github.com/jackc/pgx/v4 v4.17.0
 	github.com/joho/godotenv v1.4.0
 	github.com/lestrrat-go/jwx v1.2.25
 	github.com/opendoor/pggen v0.3.3
@@ -26,7 +26,7 @@ require (
 	github.com/jackc/pgpassfile v1.0.0 // indirect
 	github.com/jackc/pgproto3/v2 v2.3.1 // indirect
 	github.com/jackc/pgservicefile v0.0.0-20200714003250-2b9c44734f2b // indirect
-	github.com/jackc/pgtype v1.11.0 // indirect
+	github.com/jackc/pgtype v1.12.0 // indirect
 	github.com/lestrrat-go/backoff/v2 v2.0.8 // indirect
 	github.com/lestrrat-go/blackmagic v1.0.0 // indirect
 	github.com/lestrrat-go/httpcc v1.0.1 // indirect
