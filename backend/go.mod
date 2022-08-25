@@ -3,7 +3,7 @@ module github.com/treedefense/projectchip
 go 1.18
 
 require (
-	github.com/99designs/gqlgen v0.17.13
+	github.com/99designs/gqlgen v0.17.14
 	github.com/caarlos0/env/v6 v6.9.3
 	github.com/ethanpailes/pgtypes v0.0.0-20210319175856-9f6ab13c3655
 	github.com/jackc/pgconn v1.13.0
@@ -11,7 +11,7 @@ require (
 	github.com/joho/godotenv v1.4.0
 	github.com/lestrrat-go/jwx v1.2.25
 	github.com/opendoor/pggen v0.3.3
-	github.com/vektah/gqlparser/v2 v2.4.7
+	github.com/vektah/gqlparser/v2 v2.4.8
 )
 
 require (
