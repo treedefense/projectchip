@@ -6,7 +6,7 @@
     "@apollo/client": "3.6.9",
     "@auth0/auth0-react": "1.11.0",
     "@types/jest": "29.0.3",
-    "@types/node": "18.7.18",
+    "@types/node": "18.7.19",
     "@types/react": "18.0.20",
     "@types/react-dom": "18.0.6",
     "graphql": "16.6.0",
